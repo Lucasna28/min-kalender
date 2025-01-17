@@ -13,6 +13,7 @@ import {
   isToday,
   isSameDay,
   getDay,
+  subDays,
 } from "date-fns";
 import { da } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -158,13 +159,19 @@ export function YearView({
   return (
     <div className="grid grid-cols-4 gap-4 p-4 bg-background">
       {months.map((month) => {
+        const monthStart = startOfMonth(month);
+        const monthEnd = endOfMonth(month);
         const daysInMonth = eachDayOfInterval({
-          start: startOfMonth(month),
-          end: endOfMonth(month),
+          start: monthStart,
+          end: monthEnd,
         });
 
-        const firstDayOfMonth = getDay(startOfMonth(month)) || 7;
-        const emptyDays = Array.from({ length: firstDayOfMonth - 1 });
+        // Beregn tomme dage baseret på ugedagen for den første dag i måneden
+        // getDay() returnerer 0 for søndag, 1 for mandag, osv.
+        const firstDayOfMonth = getDay(monthStart);
+        // Konverter til mandag-baseret uge (0 for mandag, 6 for søndag)
+        const emptyDaysCount = (firstDayOfMonth + 6) % 7;
+        const emptyDays = Array.from({ length: emptyDaysCount });
 
         return (
           <motion.div
@@ -216,7 +223,7 @@ export function YearView({
                     )}
                     onClick={(e) => handleDayClick(day, e)}
                   >
-                    {format(day, "d")}
+                    {format(day, "d.")}
                     {hasEvents && (
                       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-[2px]">
                         {eventTypes.map((eventType, index) => (

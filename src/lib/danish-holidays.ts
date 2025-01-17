@@ -1,91 +1,14 @@
 import { addDays } from "date-fns";
 
 export interface DanishHoliday {
-  title: string;
   date: Date;
-  type: "holiday" | "special" | "birthday";
-  color?: string;
-  id?: string;
+  title: string;
+  type: "holiday" | "special" | "birthday" | "church";
+  color: string;
 }
 
-export function getDanishHolidays(year: number): DanishHoliday[] {
-  // Faste datoer
-  const fixedHolidays: DanishHoliday[] = [
-    { title: "Nytår", date: new Date(year-1, 11, 31), type: "special", color: "#FF0000", id: `new-year-${year}` },
-    { title: "Nytårsdag", date: new Date(year, 0, 1), type: "holiday", color: "#FF0000", id: `new-years-day-${year}` },
-    { title: "Fastelavn", date: new Date(year, 1, getFastelavnDate(year)), type: "special", color: "#FFA500", id: `fastelavn-${year}` },
-    { title: "Dronning Marys fødselsdag", date: new Date(year, 1, 5), type: "birthday", color: "#4169E1", id: `queen-mary-${year}` },
-    { title: "Valentinsdag", date: new Date(year, 1, 14), type: "special", color: "#FF69B4", id: `valentines-day-${year}` },
-    { title: "International Pandekagedag", date: new Date(year, 1, 28), type: "special", color: "#FFD700", id: `pancake-day-${year}` },
-    { title: "Sommertid starter", date: new Date(year, 2, getLastSundayInMonth(year, 2)), type: "special", color: "#FDB813", id: `summer-time-${year}` },
-    { title: "International Pilsnerdag", date: new Date(year, 3, 23), type: "special", color: "#FFD700", id: `pilsner-day-${year}` },
-    { title: "Dronning Margrethes fødselsdag", date: new Date(year, 3, 16), type: "birthday", color: "#4169E1", id: `queen-margrethe-${year}` },
-    { title: "Star Wars Dag", date: new Date(year, 4, 4), type: "special", color: "#4B0082", id: `star-wars-day-${year}` },
-    { title: "Internationale Kampdag", date: new Date(year, 4, 1), type: "special", color: "#FF0000", id: `labor-day-${year}` },
-    { title: "Danmarks Befrielse", date: new Date(year, 4, 5), type: "special", color: "#C8102E", id: `liberation-day-${year}` },
-    { title: "International Dansedag", date: new Date(year, 4, 29), type: "special", color: "#FF69B4", id: `dance-day-${year}` },
-    { title: "Mors dag", date: new Date(year, 4, getSecondSundayInMonth(year, 4)), type: "special", color: "#FF69B4", id: `mothers-day-${year}` },
-    { title: "Store Bededag", date: new Date(year, 4, 17), type: "holiday", color: "#FF0000", id: `prayer-day-${year}` },
-    { title: "Kong Frederiks fødselsdag", date: new Date(year, 4, 26), type: "birthday", color: "#4169E1", id: `king-frederik-${year}` },
-    { title: "Grundlovsdag", date: new Date(year, 5, 5), type: "holiday", color: "#FF0000", id: `constitution-day-${year}` },
-    { title: "Fars dag", date: new Date(year, 5, 5), type: "special", color: "#4169E1", id: `fathers-day-${year}` },
-    { title: "Valdemarsdag", date: new Date(year, 5, 15), type: "special", color: "#C8102E", id: `valdemars-day-${year}` },
-    { title: "Sankt Hans Aften", date: new Date(year, 5, 23), type: "special", color: "#FFA500", id: `midsummer-${year}` },
-    { title: "Lucas' fødselsdag", date: new Date(year, 5, 28), type: "birthday", color: "#C8102E", id: `lucas-birthday-${year}` },
-    { title: "International Chokoladedag", date: new Date(year, 6, 7), type: "special", color: "#8B4513", id: `chocolate-day-${year}` },
-    { title: "International Øl Dag", date: new Date(year, 7, 5), type: "special", color: "#FFD700", id: `international-beer-day-${year}` },
-    { title: "De Danske Udsendte", date: new Date(year, 8, 5), type: "special", color: "#4169E1", id: `deployed-forces-${year}` },
-    { title: "Talk Like a Pirate Day", date: new Date(year, 8, 19), type: "special", color: "#8B4513", id: `pirate-day-${year}` },
-    { title: "Kronprins Christians fødselsdag", date: new Date(year, 9, 15), type: "birthday", color: "#4169E1", id: `prince-christian-${year}` },
-    { title: "J-dag", date: new Date(year, 10, getFirstFridayInMonth(year, 10)), type: "special", color: "#4169E1", id: `j-day-${year}` },
-    { title: "Halloween", date: new Date(year, 9, 31), type: "special", color: "#FF6B00", id: `halloween-${year}` },
-    { title: "Vintertid starter", date: new Date(year, 9, getLastSundayInMonth(year, 9)), type: "special", color: "#4B0082", id: `winter-time-${year}` },
-    { title: "Allehelgensdag", date: new Date(year, 10, 1), type: "special", color: "#4B0082", id: `all-saints-${year}` },
-    { title: "Mortensaften", date: new Date(year, 10, 10), type: "special", color: "#FFA500", id: `martins-eve-${year}` },
-    { title: "Juleaften", date: new Date(year, 11, 24), type: "special", color: "#FF0000", id: `christmas-eve-${year}` },
-    { title: "Juledag", date: new Date(year, 11, 25), type: "holiday", color: "#FF0000", id: `christmas-day-${year}` },
-    { title: "2. juledag", date: new Date(year, 11, 26), type: "holiday", color: "#FF0000", id: `boxing-day-${year}` },
-    { title: "Racerkørernes Dag", date: new Date(year, 1, 2), type: "special", color: "#FF0000", id: `racing-day-${year}` },
-    { title: "International Pizzadag", date: new Date(year, 1, 9), type: "special", color: "#FFA500", id: `pizza-day-${year}` },
-    { title: "International Kaffedag", date: new Date(year, 9, 1), type: "special", color: "#8B4513", id: `coffee-day-${year}` },
-    { title: "International Kagedag", date: new Date(year, 10, 26), type: "special", color: "#FF69B4", id: `cake-day-${year}` },
-    { title: "International Gamingdag", date: new Date(year, 10, 23), type: "special", color: "#4B0082", id: `gaming-day-${year}` },
-  ];
-
-  // Beregn påske (forenklet version - du kan tilføje en mere præcis algoritme)
-  const easterDate = calculateEaster(year);
-  
-  // Påskerelaterede helligdage
-  const easterHolidays: DanishHoliday[] = [
-    { title: "Palmesøndag", date: addDays(easterDate, -7), type: "holiday", color: "#FF0000", id: `palm-sunday-${year}` },
-    { title: "Skærtorsdag", date: addDays(easterDate, -3), type: "holiday", color: "#FF0000", id: `maundy-thursday-${year}` },
-    { title: "Langfredag", date: addDays(easterDate, -2), type: "holiday", color: "#FF0000", id: `good-friday-${year}` },
-    { title: "Påskedag", date: easterDate, type: "holiday", color: "#FF0000", id: `easter-sunday-${year}` },
-    { title: "2. påskedag", date: addDays(easterDate, 1), type: "holiday", color: "#FF0000", id: `easter-monday-${year}` },
-    { title: "Kr. Himmelfartsdag", date: addDays(easterDate, 39), type: "holiday", color: "#FF0000", id: `ascension-day-${year}` },
-    { title: "Pinsedag", date: addDays(easterDate, 49), type: "holiday", color: "#FF0000", id: `pentecost-${year}` },
-    { title: "2. pinsedag", date: addDays(easterDate, 50), type: "holiday", color: "#FF0000", id: `whit-monday-${year}` },
-  ];
-
-  // Funktion til at finde første fredag i november (J-dag)
-  const getJDag = (year: number) => {
-    const date = new Date(year, 10, 1); // November er måned 10 (0-baseret)
-    while (date.getDay() !== 5) { // 5 er fredag
-      date.setDate(date.getDate() + 1);
-    }
-    return date;
-  };
-
-  const holidays = [
-    ...fixedHolidays,
-    ...easterHolidays,
-  ];
-
-  return holidays.sort((a, b) => a.date.getTime() - b.date.getTime());
-}
-
-// Forenklet version af påskeberegning (Meeus/Jones/Butcher algoritme)
-function calculateEaster(year: number): Date {
+// Funktion til at beregne påskedag (Meeus/Jones/Butcher algoritme)
+function getEasterSunday(year: number): Date {
   const a = year % 19;
   const b = Math.floor(year / 100);
   const c = year % 100;
@@ -98,39 +21,365 @@ function calculateEaster(year: number): Date {
   const k = c % 4;
   const l = (32 + 2 * e + 2 * i - h - k) % 7;
   const m = Math.floor((a + 11 * h + 22 * l) / 451);
-  const month = Math.floor((h + l - 7 * m + 114) / 31) - 1;
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
   const day = ((h + l - 7 * m + 114) % 31) + 1;
-  
-  return new Date(year, month, day);
+  return new Date(year, month - 1, day);
 }
 
-// Hjælpefunktion til at finde sidste søndag i en måned
-function getLastSundayInMonth(year: number, month: number): number {
-  const date = new Date(year, month + 1, 0); // Sidste dag i måneden
-  const lastSunday = date.getDate() - date.getDay();
-  return lastSunday;
+// Funktion til at beregne fastelavn (7 uger før påske)
+function getFastelavn(year: number): Date {
+  const easter = getEasterSunday(year);
+  return addDays(easter, -49);
 }
 
-// Hjælpefunktion til at beregne fastelavn (7 uger før påske)
-function getFastelavnDate(year: number): number {
-  const easter = calculateEaster(year);
-  const fastelavn = new Date(easter);
-  fastelavn.setDate(easter.getDate() - 49);
-  return fastelavn.getDate();
+// Funktion til at finde første søndag i advent (4. søndag før jul)
+function getFirstAdventSunday(year: number): Date {
+  const christmas = new Date(year, 11, 24); // 24. december
+  const christmasDay = christmas.getDay(); // 0 = søndag, 1 = mandag, osv.
+  const daysToSubtract = christmasDay + 21; // 3 uger (21 dage) plus dage til søndag
+  return addDays(christmas, -daysToSubtract);
 }
 
-// Hjælpefunktion til at finde anden søndag i en måned
-function getSecondSundayInMonth(year: number, month: number): number {
-  const firstDay = new Date(year, month, 1);
-  const firstSunday = 1 + (7 - firstDay.getDay()) % 7;
-  return firstSunday + 7; // Anden søndag
+// Funktion til at finde de andre adventssøndage
+function getAdventSundays(year: number): Date[] {
+  const firstAdvent = getFirstAdventSunday(year);
+  return [
+    firstAdvent,
+    addDays(firstAdvent, 7),
+    addDays(firstAdvent, 14),
+    addDays(firstAdvent, 21),
+  ];
 }
 
-// Hjælpefunktion til at finde første fredag i en måned
-function getFirstFridayInMonth(year: number, month: number): number {
-  const date = new Date(year, month, 1);
-  const dayOfWeek = date.getDay();
-  // 5 er fredag (0 er søndag, 1 er mandag, osv.)
-  const daysUntilFriday = (5 - dayOfWeek + 7) % 7;
-  return 1 + daysUntilFriday;
-} 
+export function getDanishHolidays(year: number): DanishHoliday[] {
+  // Beregn påskedag og relaterede helligdage
+  const easterSunday = getEasterSunday(year);
+  const fastelavn = getFastelavn(year);
+  const adventSundays = getAdventSundays(year);
+
+  // Beregn Fars Dag (5. juni eller første søndag i juni hvis 5. juni ikke er en søndag)
+  const fathersDayBase = new Date(year, 5, 5);
+  const fathersDayOffset = (7 - fathersDayBase.getDay()) % 7;
+  const fathersDay = addDays(fathersDayBase, fathersDayOffset);
+
+  // Beregn Mors Dag (anden søndag i maj)
+  const mothersDayBase = new Date(year, 4, 1);
+  const mothersDayOffset = (7 - mothersDayBase.getDay()) % 7;
+  const mothersDay = addDays(mothersDayBase, mothersDayOffset + 7);
+
+  const holidays: DanishHoliday[] = [
+    // Faste helligdage
+    {
+      date: new Date(year, 0, 1),
+      title: "Nytårsdag",
+      type: "holiday",
+      color: "#dc2626",
+    },
+    // Kongelige fødselsdage
+    {
+      date: new Date(year, 4, 26), // 26. maj
+      title: "Kong Frederik X's fødselsdag",
+      type: "birthday",
+      color: "#3b82f6",
+    },
+    {
+      date: new Date(year, 1, 5), // 5. februar
+      title: "Dronning Mary's fødselsdag",
+      type: "birthday",
+      color: "#3b82f6",
+    },
+    {
+      date: new Date(year, 9, 15), // 15. oktober
+      title: "Kronprins Christian's fødselsdag",
+      type: "birthday",
+      color: "#3b82f6",
+    },
+    {
+      date: new Date(year, 3, 16), // 16. april
+      title: "Dronning Margrethe II's fødselsdag",
+      type: "birthday",
+      color: "#3b82f6",
+    },
+    {
+      date: new Date(year, 1, 14),
+      title: "Valentinsdag",
+      type: "special",
+      color: "#f59e0b",
+    },
+    { date: fastelavn, title: "Fastelavn", type: "special", color: "#f59e0b" },
+    {
+      date: new Date(year, 2, 8),
+      title: "Kvindernes Internationale Kampdag",
+      type: "special",
+      color: "#ec4899",
+    },
+    {
+      date: addDays(easterSunday, -3),
+      title: "Skærtorsdag",
+      type: "holiday",
+      color: "#dc2626",
+    },
+    {
+      date: addDays(easterSunday, -2),
+      title: "Langfredag",
+      type: "holiday",
+      color: "#dc2626",
+    },
+    {
+      date: easterSunday,
+      title: "Påskedag",
+      type: "holiday",
+      color: "#dc2626",
+    },
+    {
+      date: addDays(easterSunday, 1),
+      title: "2. Påskedag",
+      type: "holiday",
+      color: "#dc2626",
+    },
+    {
+      date: addDays(easterSunday, 26),
+      title: "Store Bededag",
+      type: "holiday",
+      color: "#dc2626",
+    },
+    {
+      date: new Date(year, 4, 1),
+      title: "Arbejdernes Internationale Kampdag",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 4, 4),
+      title: "Star Wars Dag (May the 4th)",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 4, 5),
+      title: "Danmarks Befrielsesdag",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: addDays(easterSunday, 39),
+      title: "Kristi Himmelfartsdag",
+      type: "holiday",
+      color: "#dc2626",
+    },
+    {
+      date: mothersDay,
+      title: "Mors Dag",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: addDays(easterSunday, 49),
+      title: "Pinsedag",
+      type: "holiday",
+      color: "#dc2626",
+    },
+    {
+      date: addDays(easterSunday, 50),
+      title: "2. Pinsedag",
+      type: "holiday",
+      color: "#dc2626",
+    },
+    {
+      date: new Date(year, 5, 5),
+      title: "Grundlovsdag",
+      type: "holiday",
+      color: "#dc2626",
+    },
+    {
+      date: fathersDay,
+      title: "Fars Dag",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 5, 15),
+      title: "Valdemarsdag",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 5, 23),
+      title: "Sankt Hans",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 5, 28),
+      title: "Lucas' Fødselsdag 🎉",
+      type: "birthday",
+      color: "#3b82f6",
+    },
+    {
+      date: new Date(year, 7, 1),
+      title: "International Øldag",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 8, 5),
+      title: "Danmarks Udsendte",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 8, 19),
+      title: "International Talk Like a Pirate Day",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 9, 1),
+      title: "International Kaffedag",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 9, 16),
+      title: "Internationale Madspildsdag",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 9, 28),
+      title: "International Chokoladedag",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 6, 17), // 17. juli
+      title: "International Emoji Dag 🎉",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 7, 8), // 8. august
+      title: "International Kattedag 🐱",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 7, 26), // 26. august
+      title: "International Hundedag 🐕",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 1, 9), // 9. februar
+      title: "International Pizzadag 🍕",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 5, 21), // 21. juni
+      title: "International Yoga Dag 🧘‍♀️",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 7, 15), // 15. august
+      title: "International Slapdag 😴",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 9, 1), // 1. oktober
+      title: "International Kaffedag ☕",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 9, 31),
+      title: "Halloween",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 10, 1),
+      title: "Allehelgensdag",
+      type: "church",
+      color: "#7c3aed",
+    },
+    {
+      date: new Date(year, 10, 10),
+      title: "Mortens Aften",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 10, 11),
+      title: "Mortensdag",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: new Date(year, 11, 24),
+      title: "Juleaften",
+      type: "holiday",
+      color: "#dc2626",
+    },
+    {
+      date: new Date(year, 11, 25),
+      title: "1. Juledag",
+      type: "holiday",
+      color: "#dc2626",
+    },
+    {
+      date: new Date(year, 11, 26),
+      title: "2. Juledag",
+      type: "holiday",
+      color: "#dc2626",
+    },
+    {
+      date: new Date(year, 11, 31),
+      title: "Nytårsaften",
+      type: "holiday",
+      color: "#dc2626",
+    },
+  ];
+
+  // Tilføj adventssøndage
+  adventSundays.forEach((date, index) => {
+    holidays.push({
+      date,
+      title: `${index + 1}. søndag i advent`,
+      type: "church",
+      color: "#7c3aed",
+    });
+  });
+
+  // Tilføj sommertid og vintertid
+  const summerTime = new Date(
+    year,
+    2,
+    31 - (new Date(year, 2, 31).getDay() || 7),
+  );
+  const winterTime = new Date(
+    year,
+    9,
+    31 - (new Date(year, 9, 31).getDay() || 7),
+  );
+
+  holidays.push(
+    {
+      date: summerTime,
+      title: "Sommertid Starter",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: winterTime,
+      title: "Vintertid Starter",
+      type: "special",
+      color: "#f59e0b",
+    },
+  );
+
+  // Sorter datoerne kronologisk
+  return holidays.sort((a, b) => a.date.getTime() - b.date.getTime());
+}

@@ -112,8 +112,8 @@ export function WeekView({
   // Render kun ugenummer når komponenten er mounted
   const weekNumber = mounted && days[0] ? getWeekNumber(days[0]) : null;
 
-  // Generer timer (48 halvtimer i stedet for 24 timer)
-  const timeSlots = Array.from({ length: 48 }, (_, i) => i / 2);
+  // Generer timer (24 timer i stedet for 48 halvtimer)
+  const timeSlots = Array.from({ length: 24 }, (_, i) => i);
 
   // Hent danske helligdage når året ændrer sig
   useEffect(() => {
@@ -239,7 +239,7 @@ export function WeekView({
           {timeSlots.map((hour) => (
             <div
               key={hour}
-              className="h-10 relative flex items-center justify-end pr-2 border-t border-border/40"
+              className="h-20 relative flex items-center justify-end pr-2 border-t border-border/40"
             >
               <span className="text-xs text-muted-foreground whitespace-nowrap font-medium">
                 {format(
@@ -269,7 +269,7 @@ export function WeekView({
               <div
                 key={hour}
                 className={cn(
-                  "h-10 border-t border-border/40 relative group transition-colors duration-200",
+                  "h-20 border-t border-border/40 relative group transition-colors duration-200",
                   "hover:bg-muted/50"
                 )}
                 onClick={() => {

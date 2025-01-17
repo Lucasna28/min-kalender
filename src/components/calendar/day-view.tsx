@@ -41,7 +41,8 @@ interface DayViewProps {
 const getWeekNumber = (date: Date) => {
   if (!date) return 1;
   const target = new Date(date.valueOf());
-  const dayNr = (date.getDay() + 6) % 7;
+  // Juster for mandag som første dag i ugen
+  const dayNr = (date.getDay() + 6) % 7; // Konverter til mandag-baseret (0 = mandag, 6 = søndag)
   target.setDate(target.getDate() - dayNr + 3);
   const firstThursday = target.valueOf();
   target.setMonth(0, 1);
@@ -108,8 +109,8 @@ export function DayView({
   // Render kun ugenummer når komponenten er mounted
   const weekNumber = mounted ? getWeekNumber(date) : null;
 
-  // Generer timer (48 halvtimer i stedet for 24 timer)
-  const timeSlots = Array.from({ length: 48 }, (_, i) => i / 2);
+  // Generer timer (24 timer i stedet for 48 halvtimer)
+  const timeSlots = Array.from({ length: 24 }, (_, i) => i);
 
   // Hent danske helligdage når året ændrer sig
   useEffect(() => {
@@ -301,16 +302,10 @@ export function DayView({
           {timeSlots.map((hour) => (
             <div
               key={hour}
-              className="h-10 relative flex items-center justify-end pr-2 border-t border-border/40"
+              className="h-20 relative flex items-center justify-end pr-2 border-t border-border/40"
             >
               <span className="text-xs text-muted-foreground whitespace-nowrap font-medium">
-                {format(
-                  setMinutes(
-                    setHours(new Date(), Math.floor(hour)),
-                    (hour % 1) * 60
-                  ),
-                  "HH:mm"
-                )}
+                {format(setHours(new Date(), hour), "HH:mm")}
               </span>
             </div>
           ))}
@@ -329,27 +324,18 @@ export function DayView({
             <div
               key={hour}
               className={cn(
-                "h-10 border-t border-border/40 relative group transition-colors duration-200",
+                "h-20 border-t border-border/40 relative group transition-colors duration-200",
                 "hover:bg-muted/50"
               )}
               onClick={() => {
-                const selectedDate = setMinutes(
-                  setHours(date, Math.floor(hour)),
-                  (hour % 1) * 60
-                );
+                const selectedDate = setHours(date, hour);
                 onDateChange(selectedDate, { shouldOpenCreateEvent: true });
               }}
             >
               {/* Hover effekt med klokkeslæt */}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="absolute right-1 top-1 bg-background/95 px-1.5 py-0.5 rounded text-xs text-muted-foreground shadow-sm">
-                  {format(
-                    setMinutes(
-                      setHours(date, Math.floor(hour)),
-                      (hour % 1) * 60
-                    ),
-                    "HH:mm"
-                  )}
+                  {format(setHours(date, hour), "HH:mm")}
                 </div>
               </div>
             </div>

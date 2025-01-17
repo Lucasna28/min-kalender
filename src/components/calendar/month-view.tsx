@@ -36,11 +36,12 @@ import { memo } from "react";
 interface MonthViewProps {
   date: Date;
   events: CalendarEvent[];
-  isLoading: boolean;
+  isLoading?: boolean;
   onDateChange: (
     date: Date,
-    options?: { shouldOpenCreateEvent?: boolean }
+    options?: { shouldOpenCreateEvent?: boolean; shouldChangeView?: boolean }
   ) => void;
+  showHolidays: boolean;
 }
 
 // Funktion til at få ugenummer
@@ -108,7 +109,7 @@ const DayCell = memo(
         )}
         onClick={() => onDateClick(day)}
       >
-        <time dateTime={format(day, "yyyy-MM-dd")}>{format(day, "d")}</time>
+        <time dateTime={format(day, "yyyy-MM-dd")}>{format(day, "d.")}</time>
 
         <div
           ref={parentRef}
@@ -150,6 +151,7 @@ export function MonthView({
   events,
   isLoading,
   onDateChange,
+  showHolidays,
 }: MonthViewProps) {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
     null
@@ -193,45 +195,46 @@ export function MonthView({
       isSameDay(event.start_date, day)
     );
 
-    // Find danske helligdage for denne dag
-    const holidays = danishHolidays
-      .filter((holiday) => isSameDay(holiday.date, day))
-      .map(
-        (holiday) =>
-          ({
-            id: `holiday-${holiday.date.getTime()}-${holiday.title
-              .toLowerCase()
-              .replace(/\s+/g, "-")}`,
-            title: holiday.title,
-            start_date: holiday.date,
-            end_date: holiday.date,
-            is_all_day: true,
-            color: "#dc2626", // Rød farve for helligdage
-            calendar_id: "danish-holidays",
-            user_id: "system",
-            created_at: new Date(),
-            category: "helligdag",
-            description: "Dansk helligdag",
-          } as CalendarEvent)
-      );
+    // Find danske helligdage for denne dag, men kun hvis showHolidays er true
+    const holidays = showHolidays
+      ? danishHolidays
+          .filter((holiday) => isSameDay(holiday.date, day))
+          .map(
+            (holiday) =>
+              ({
+                id: `holiday-${holiday.date.getTime()}-${holiday.title
+                  .toLowerCase()
+                  .replace(/\s+/g, "-")}`,
+                title: holiday.title,
+                start_date: holiday.date,
+                end_date: holiday.date,
+                is_all_day: true,
+                color: "#dc2626", // Rød farve for helligdage
+                calendar_id: "danish-holidays",
+                user_id: "system",
+                created_at: new Date(),
+                category: "helligdag",
+                description: "Dansk helligdag",
+              } as CalendarEvent)
+          )
+      : [];
 
     // Vis helligdage først
     return [...holidays, ...regularEvents];
   };
 
-  // Generer dage for måneden plus 2 dage før og efter
+  // Generer dage for måneden
   const monthStart = startOfMonth(date);
   const monthEnd = endOfMonth(date);
 
-  // Find første mandag i måneden
-  const firstDayOfMonth = getDay(monthStart) || 7; // 0 = søndag, 1-6 = man-lør
-  const daysToIncludeFromPreviousMonth = Math.min(firstDayOfMonth - 1, 2);
+  // Find første mandag før månedens start
+  const firstDayOfMonth = getDay(monthStart);
+  const daysToIncludeFromPreviousMonth = (firstDayOfMonth + 6) % 7;
+  const calendarStart = subDays(monthStart, daysToIncludeFromPreviousMonth);
 
   // Find sidste søndag i måneden
-  const lastDayOfMonth = getDay(monthEnd) || 7;
-  const daysToIncludeFromNextMonth = Math.min(7 - lastDayOfMonth, 2);
-
-  const calendarStart = subDays(monthStart, daysToIncludeFromPreviousMonth);
+  const lastDayOfMonth = getDay(monthEnd);
+  const daysToIncludeFromNextMonth = (7 - ((lastDayOfMonth + 1) % 7)) % 7;
   const calendarEnd = addDays(monthEnd, daysToIncludeFromNextMonth);
 
   const days = eachDayOfInterval({
@@ -256,108 +259,129 @@ export function MonthView({
         ))}
       </div>
 
-      {/* Kalendergrid */}
-      <div
-        className="flex-1 grid grid-cols-7"
-        style={{
-          gridTemplateRows: `repeat(${numberOfWeeks}, minmax(100px, 1fr))`,
-        }}
-      >
-        {days.map((day, dayIdx) => {
-          const dayEvents = getEventsForDay(day);
-          const isCurrentMonth = isSameMonth(day, date);
-          const weekNumber = getWeekNumber(day);
-          const isFirstInWeek = dayIdx % 7 === 0;
+      {/* Kalendergrid med animation */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={date.toISOString()}
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -20, scale: 0.95 }}
+          transition={{
+            duration: 0.3,
+            ease: "easeOut",
+          }}
+          className="grid grid-cols-7 flex-1"
+          style={{
+            gridTemplateRows: `repeat(${numberOfWeeks}, minmax(100px, 1fr))`,
+          }}
+        >
+          {days.map((day, dayIdx) => {
+            const dayEvents = getEventsForDay(day);
+            const isCurrentMonth = isSameMonth(day, date);
+            const weekNumber = getWeekNumber(day);
+            const isFirstInWeek = dayIdx % 7 === 0;
 
-          return (
-            <div
-              key={day.toISOString()}
-              className={cn(
-                "border-r border-b border-border p-1 relative transition-colors duration-200",
-                !isCurrentMonth && "bg-muted/50",
-                isToday(day) && "bg-primary/5",
-                "hover:bg-accent/50 cursor-pointer"
-              )}
-              onClick={() => onDateChange(day, { shouldOpenCreateEvent: true })}
-            >
-              {/* Ugenummer (kun for første dag i ugen) */}
-              {isFirstInWeek && (
-                <div className="absolute -left-8 top-1 text-xs text-muted-foreground">
-                  {weekNumber}
-                </div>
-              )}
-
-              {/* Dato */}
+            return (
               <div
+                key={day.toISOString()}
                 className={cn(
-                  "text-sm font-medium h-6 flex items-center justify-end px-1",
-                  !isCurrentMonth && "text-muted-foreground/60",
-                  isToday(day) && "text-primary font-bold"
+                  "border-r border-b border-border p-1 relative transition-colors duration-200",
+                  !isCurrentMonth && "bg-muted/30",
+                  isToday(day) && "bg-primary/5",
+                  "hover:bg-accent/50 cursor-pointer group"
                 )}
+                onClick={() =>
+                  onDateChange(day, { shouldOpenCreateEvent: true })
+                }
               >
-                {format(day, "d")}
-              </div>
+                {/* Ugenummer (kun for første dag i ugen) */}
+                {isFirstInWeek && (
+                  <div className="absolute -left-8 top-1 text-xs text-muted-foreground">
+                    {weekNumber}
+                  </div>
+                )}
 
-              {/* Events */}
-              {isLoading ? (
-                <div className="space-y-1">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-4 w-1/2" />
+                {/* Dato */}
+                <div
+                  className={cn(
+                    "text-sm font-medium h-6 flex items-center justify-end px-1",
+                    !isCurrentMonth && "text-muted-foreground/50 italic",
+                    isToday(day) && "text-primary font-bold"
+                  )}
+                >
+                  {!isCurrentMonth && (
+                    <span className="text-xs mr-1 text-muted-foreground/40">
+                      {format(day, "MMM", { locale: da })}
+                    </span>
+                  )}
+                  {format(day, "d.")}
                 </div>
-              ) : (
-                <div className="space-y-1 max-h-[calc(100%-1.5rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/30">
-                  {dayEvents.map((event) => (
-                    <TooltipProvider key={event.id}>
-                      <Tooltip delayDuration={200}>
-                        <TooltipTrigger asChild>
-                          <div>
-                            <MemoizedEventItem
-                              event={event}
-                              className={cn(
-                                "text-xs p-1 rounded-sm shadow-sm cursor-pointer transition-all duration-200",
-                                "hover:shadow-md hover:scale-[1.02]"
+
+                {/* Events */}
+                {isLoading ? (
+                  <div className="space-y-1">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                ) : (
+                  <div className="space-y-1 max-h-[calc(100%-1.5rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/30">
+                    {dayEvents.map((event) => (
+                      <TooltipProvider key={event.id}>
+                        <Tooltip delayDuration={200}>
+                          <TooltipTrigger asChild>
+                            <div>
+                              <MemoizedEventItem
+                                event={event}
+                                className={cn(
+                                  "text-xs p-1 rounded-sm shadow-sm cursor-pointer transition-all duration-200",
+                                  "hover:shadow-md hover:scale-[1.02]",
+                                  !isCurrentMonth && "opacity-50"
+                                )}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedEvent(event);
+                                }}
+                              />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent
+                            side="right"
+                            className="max-w-[300px]"
+                          >
+                            <div className="space-y-1">
+                              <p className="font-medium">{event.title}</p>
+                              {!event.is_all_day && (
+                                <p className="text-sm text-muted-foreground">
+                                  {event.start_time} - {event.end_time}
+                                </p>
                               )}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedEvent(event);
-                              }}
-                            />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="max-w-[300px]">
-                          <div className="space-y-1">
-                            <p className="font-medium">{event.title}</p>
-                            {!event.is_all_day && (
-                              <p className="text-sm text-muted-foreground">
-                                {event.start_time} - {event.end_time}
-                              </p>
-                            )}
-                            {event.description && (
-                              <p className="text-sm">{event.description}</p>
-                            )}
-                            {event.location && (
-                              <p className="text-sm text-muted-foreground">
-                                📍 {event.location}
-                              </p>
-                            )}
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ))}
-                </div>
-              )}
+                              {event.description && (
+                                <p className="text-sm">{event.description}</p>
+                              )}
+                              {event.location && (
+                                <p className="text-sm text-muted-foreground">
+                                  📍 {event.location}
+                                </p>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ))}
+                  </div>
+                )}
 
-              {/* Mere indikator hvis der er flere events end der kan vises */}
-              {dayEvents.length > 4 && (
-                <div className="absolute bottom-1 right-1 text-xs text-muted-foreground bg-background/80 px-1 rounded">
-                  +{dayEvents.length - 4} mere
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                {/* Mere indikator hvis der er flere events end der kan vises */}
+                {dayEvents.length > 4 && (
+                  <div className="absolute bottom-1 right-1 text-xs text-muted-foreground bg-background/80 px-1 rounded">
+                    +{dayEvents.length - 4} mere
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </motion.div>
+      </AnimatePresence>
 
       {/* Event dialog */}
       <AnimatePresence>

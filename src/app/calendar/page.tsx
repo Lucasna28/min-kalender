@@ -51,6 +51,7 @@ export default function CalendarPage() {
   );
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
+  const [showHolidays, setShowHolidays] = useState(true);
   const { theme, setTheme } = useTheme();
   const { supabase } = useSupabase();
   const router = useRouter();
@@ -155,7 +156,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen overflow-hidden bg-background">
       <TutorialDialog
         isOpen={showTutorial}
         onOpenChange={setShowTutorial}
@@ -507,6 +508,8 @@ export default function CalendarPage() {
           onSelectedCalendarIdChange={setSelectedCalendarId}
           isOpen={isSidebarOpen}
           onOpenChange={setIsSidebarOpen}
+          showHolidays={showHolidays}
+          onShowHolidaysChange={setShowHolidays}
         />
       </div>
 
@@ -521,6 +524,7 @@ export default function CalendarPage() {
           onSidebarOpenChange={setIsSidebarOpen}
           isCreateEventOpen={isCreateEventOpen}
           onCreateEventOpenChange={setIsCreateEventOpen}
+          showHolidays={showHolidays}
         />
       </div>
     </div>

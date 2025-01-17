@@ -44,4 +44,4 @@ export interface SidebarProps {
   onOpenChange?: (open: boolean) => void;
   className?: string;
   children?: React.ReactNode;
-} 
+}

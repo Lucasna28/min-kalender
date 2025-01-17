@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import SupabaseProvider from "@/components/providers/supabase-provider";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -38,6 +39,7 @@ export default function RootLayout({
             />
           </SupabaseProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

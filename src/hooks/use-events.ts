@@ -166,15 +166,10 @@ export function useEvents(visibleCalendarIds: string[] = []) {
     try {
       setIsLoading(true);
 
+      // Hent events
       const { data: events, error } = await supabase
-        .from("events")
-        .select(`
-          *,
-          creator:user_id (
-            email,
-            raw_user_meta_data->full_name
-          )
-        `)
+        .from("accessible_events")
+        .select("*")
         .in("calendar_id", visibleCalendarIds);
 
       if (error) {
@@ -182,7 +177,24 @@ export function useEvents(visibleCalendarIds: string[] = []) {
         return;
       }
 
-      setEvents(events);
+      // Hent den aktuelle bruger
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+      // Konverter datoer og tilføj brugerdata
+      const formattedEvents = events.map((event) => ({
+        ...event,
+        start_date: new Date(event.start_date),
+        end_date: new Date(event.end_date),
+        created_at: new Date(event.created_at),
+        creator_email: event.user_id === currentUser?.id
+          ? currentUser.email
+          : "Anden bruger",
+        creator_name: event.user_id === currentUser?.id
+          ? currentUser.user_metadata?.full_name
+          : "Anden bruger",
+      }));
+
+      setEvents(formattedEvents);
     } catch (error) {
       console.error("Fejl ved hentning af begivenheder:", error);
     } finally {

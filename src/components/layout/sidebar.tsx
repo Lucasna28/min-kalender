@@ -25,6 +25,7 @@ import {
   HelpCircle,
   Mail,
   Bell,
+  Sparkles,
 } from "lucide-react";
 import { CreateCalendarDialog } from "@/components/calendar/create-calendar-dialog";
 import { useSupabase } from "@/components/providers/supabase-provider";
@@ -107,6 +108,10 @@ interface SidebarProps {
   onSelectedCalendarIdChange: (id: string | null) => void;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  showHolidays?: boolean;
+  onShowHolidaysChange?: (show: boolean) => void;
+  showFunHolidays?: boolean;
+  onShowFunHolidaysChange?: (show: boolean) => void;
 }
 
 const VIEW_OPTIONS: Record<
@@ -130,6 +135,10 @@ export default function CalendarSidebar({
   onSelectedCalendarIdChange,
   isOpen,
   onOpenChange,
+  showHolidays = true,
+  onShowHolidaysChange = () => {},
+  showFunHolidays = true,
+  onShowFunHolidaysChange = () => {},
 }: SidebarProps) {
   const [isCreateCalendarOpen, setIsCreateCalendarOpen] = useState(false);
   const [selectedCalendarForEdit, setSelectedCalendarForEdit] =
@@ -502,70 +511,76 @@ export default function CalendarSidebar({
                 <Plus className="h-3 w-3" />
               </Button>
             </div>
-            <div className="space-y-0.5">
-              {calendars
-                .filter((calendar) => calendar && calendar.id)
-                .map((calendar) => {
-                  const isVisible =
-                    calendar && calendar.id
-                      ? visibleCalendarIds.includes(calendar.id)
-                      : false;
-                  const isSelected =
-                    calendar && calendar.id
-                      ? selectedCalendarId === calendar.id
-                      : false;
-                  const CalendarTypeIcon = calendar?.type
-                    ? CALENDAR_TYPES.find(
-                        (t) => t.id === (calendar.type || "other")
-                      )?.icon || CalendarIcon
-                    : CalendarIcon;
+            <div className="space-y-4">
+              <div className="space-y-1">
+                {calendars
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((calendar) => {
+                    const isVisible = visibleCalendarIds.includes(calendar.id);
+                    const isSelected = selectedCalendarId === calendar.id;
+                    const calendarType = CALENDAR_TYPES.find(
+                      (type) => type.id === calendar.type
+                    );
 
-                  return (
-                    <div
-                      key={calendar.id}
-                      className={cn(
-                        "flex items-center gap-1.5 px-1.5 py-1 rounded-md cursor-pointer group transition-colors",
-                        "hover:bg-primary/5",
-                        isSelected && "bg-primary/10"
-                      )}
-                      onClick={() => handleCalendarClick(calendar.id)}
-                    >
-                      <Checkbox
-                        checked={isVisible}
-                        onCheckedChange={() =>
-                          toggleCalendarVisibility(calendar.id, isVisible)
-                        }
+                    return (
+                      <div
+                        key={calendar.id}
                         className={cn(
-                          "h-3.5 w-3.5 rounded-sm transition-colors",
-                          isVisible &&
-                            "bg-[var(--calendar-color)] border-[var(--calendar-color)] hover:bg-[var(--calendar-color)] hover:border-[var(--calendar-color)]"
+                          "group flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary",
+                          isSelected && "bg-primary/10 text-primary"
                         )}
-                        style={
-                          {
-                            "--calendar-color": calendar.color,
-                          } as React.CSSProperties
-                        }
-                      />
-                      <CalendarTypeIcon className="h-3 w-3 text-muted-foreground/50" />
-                      <span className="text-xs flex-1 truncate opacity-90">
-                        {calendar.name}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5 opacity-0 group-hover:opacity-100 rounded-full hover:bg-primary/10 hover:text-primary transition-all"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedCalendarForEdit(calendar);
-                        }}
+                        onClick={() => handleCalendarClick(calendar.id)}
                       >
-                        <Settings className="h-2.5 w-2.5" />
-                      </Button>
-                    </div>
-                  );
-                })}
+                        <Checkbox
+                          checked={isVisible}
+                          onCheckedChange={() =>
+                            toggleCalendarVisibility(calendar.id, isVisible)
+                          }
+                          onClick={(e) => e.stopPropagation()}
+                          className="data-[state=checked]:bg-[var(--calendar-color)] data-[state=checked]:border-[var(--calendar-color)]"
+                          style={
+                            {
+                              "--calendar-color": calendar.color,
+                            } as React.CSSProperties
+                          }
+                        />
+                        <span className="flex-1 truncate">{calendar.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 opacity-0 group-hover:opacity-100 rounded-full hover:bg-primary/10 hover:text-primary transition-all"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCalendarForEdit(calendar);
+                          }}
+                        >
+                          <Settings className="h-2.5 w-2.5" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+              </div>
             </div>
           </div>
+
+          <SidebarSection title="Helligdage">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium">
+                <Checkbox
+                  checked={showHolidays}
+                  onCheckedChange={(checked) => {
+                    if (typeof onShowHolidaysChange === "function") {
+                      onShowHolidaysChange(!!checked);
+                    }
+                  }}
+                />
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4" />
+                  <span>Helligdage</span>
+                </div>
+              </div>
+            </div>
+          </SidebarSection>
         </SidebarContent>
 
         <SidebarFooter className="border-t flex-shrink-0">

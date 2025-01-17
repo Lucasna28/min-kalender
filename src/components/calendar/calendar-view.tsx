@@ -29,6 +29,7 @@ interface CalendarViewProps {
   onSidebarOpenChange?: (open: boolean) => void;
   isCreateEventOpen?: boolean;
   onCreateEventOpenChange?: (open: boolean) => void;
+  showHolidays: boolean;
 }
 
 const CalendarView = ({
@@ -40,6 +41,7 @@ const CalendarView = ({
   onSidebarOpenChange,
   isCreateEventOpen = false,
   onCreateEventOpenChange,
+  showHolidays,
 }: CalendarViewProps) => {
   const [_isCreateEventOpen, setIsCreateEventOpen] = useState(false);
   const [selectedEventDate, setSelectedEventDate] = useState<Date>(new Date());
@@ -333,12 +335,42 @@ const CalendarView = ({
           className="flex-1 overflow-auto relative"
         >
           <div className="min-w-full h-full">
-            <ViewComponent
-              date={selectedDate}
-              onDateChange={handleDateChange}
-              events={events}
-              isLoading={isLoading}
-            />
+            {view === "month" && (
+              <MonthView
+                date={selectedDate}
+                events={events}
+                isLoading={isLoading}
+                onDateChange={handleDateChange}
+                showHolidays={showHolidays}
+              />
+            )}
+            {view === "week" && (
+              <WeekView
+                date={selectedDate}
+                events={events}
+                isLoading={isLoading}
+                onDateChange={handleDateChange}
+                showHolidays={showHolidays}
+              />
+            )}
+            {view === "day" && (
+              <DayView
+                date={selectedDate}
+                events={events}
+                isLoading={isLoading}
+                onDateChange={handleDateChange}
+                showHolidays={showHolidays}
+              />
+            )}
+            {view === "year" && (
+              <YearView
+                date={selectedDate}
+                events={events}
+                isLoading={isLoading}
+                onDateChange={handleDateChange}
+                showHolidays={showHolidays}
+              />
+            )}
           </div>
         </motion.div>
       </AnimatePresence>
