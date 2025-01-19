@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useSupabase } from "@/components/providers/supabase-provider";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,6 @@ interface AuthFormProps {
 }
 
 export function AuthForm({ view = "sign-in" }: AuthFormProps) {
-  const router = useRouter();
   const { supabase } = useSupabase();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -35,10 +33,10 @@ export function AuthForm({ view = "sign-in" }: AuthFormProps) {
         title: "Tjek din email",
         description: "Vi har sendt dig et magisk link til at logge ind med.",
       });
-    } catch (err) {
+    } catch (error: any) {
       toast({
         title: "Fejl",
-        description: "Der skete en fejl. Prøv igen senere.",
+        description: error?.message || "Der skete en fejl. Prøv igen senere.",
         variant: "destructive",
       });
     } finally {

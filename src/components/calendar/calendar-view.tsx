@@ -145,11 +145,17 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
         case "day":
           return format(selectedDate, "d. MMMM yyyy", { locale: da });
         case "week":
-          return `Uge ${format(selectedDate, "w, yyyy", { locale: da })}`;
+          return `Uge ${format(selectedDate, "w")} · ${format(
+            selectedDate,
+            "MMMM yyyy",
+            {
+              locale: da,
+            }
+          )}`;
         case "month":
           return format(selectedDate, "MMMM yyyy", { locale: da });
         case "year":
-          return format(selectedDate, "yyyy", { locale: da });
+          return format(selectedDate, "yyyy");
       }
     };
 

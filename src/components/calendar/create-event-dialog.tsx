@@ -48,6 +48,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Database } from "@/lib/database.types";
 
 // Opdaterer predefinerede kategorier til at matche databasens enum værdier
 const PREDEFINED_CATEGORIES = [
@@ -161,28 +162,19 @@ const formSchema = z
   );
 
 interface CreateEventDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  defaultDate: Date;
-  visibleCalendarIds: string[];
-  createEvent: (eventData: any) => Promise<any>;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  color: string;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  defaultDate?: Date;
+  defaultValues?: z.infer<typeof formSchema>;
+  createEvent: (
+    eventData: Database["public"]["Tables"]["events"]["Insert"]
+  ) => Promise<Database["public"]["Tables"]["events"]["Row"]>;
 }
 
 interface User {
   id: string;
   email: string;
   full_name?: string;
-}
-
-interface Invitation {
-  email: string;
-  name?: string;
 }
 
 export function CreateEventDialog({
@@ -199,7 +191,7 @@ export function CreateEventDialog({
   >([]);
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [userSearchValue, setUserSearchValue] = useState("");
+  const [userSearchValue, _setUserSearchValue] = useState("");
   const [calendarPermissions, setCalendarPermissions] = useState<
     Record<string, string>
   >({});
@@ -228,53 +220,40 @@ export function CreateEventDialog({
     },
   });
 
-  // Hent kalendere og tilladelser når dialogen åbnes
+  // Tilføj fetchCalendars funktion
+  const fetchCalendars = async () => {
+    const { data, error } = await supabase
+      .from("calendars")
+      .select("id, name, user_id");
+
+    if (error) {
+      console.error("Fejl ved hentning af kalendere:", error);
+      return;
+    }
+
+    setCalendars(data || []);
+  };
+
+  // Opdater useEffect til at bruge fetchCalendars
   useEffect(() => {
-    if (!isOpen) return;
-
-    const fetchData = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Hent kalendere
-      const { data: userCalendars } = await supabase
-        .from("calendars")
-        .select("id, name, user_id")
-        .in("id", visibleCalendarIds);
-
-      if (userCalendars) {
-        setCalendars(userCalendars);
-
-        // Initialiser permissions for ejede kalendere
-        const initialPermissions: Record<string, string> = {};
-        userCalendars.forEach((cal) => {
-          if (cal.user_id === user.id) {
-            initialPermissions[cal.id] = "owner";
-          }
-        });
-
-        // Hent delte kalendere permissions
-        const { data: shares } = await supabase
-          .from("calendar_shares")
-          .select("calendar_id, permission")
-          .eq("email", user.email)
-          .eq("status", "accepted")
-          .in("calendar_id", visibleCalendarIds);
-
-        if (shares) {
-          shares.forEach((share) => {
-            initialPermissions[share.calendar_id] = share.permission;
-          });
+    const channel = supabase
+      .channel("calendar-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "calendars" },
+        () => {
+          fetchCalendars();
         }
+      )
+      .subscribe();
 
-        setCalendarPermissions(initialPermissions);
-      }
+    // Hent kalendere første gang
+    fetchCalendars();
+
+    return () => {
+      supabase.removeChannel(channel);
     };
-
-    fetchData();
-  }, [isOpen, visibleCalendarIds]);
+  }, [supabase]);
 
   // Opdater form schema til kun at vise kalendere hvor brugeren har rettigheder
   const calendarsWithWriteAccess = calendars.filter((cal) => {
@@ -380,6 +359,19 @@ export function CreateEventDialog({
       setIsLoading(false);
     }
   };
+
+  // Opret en statisk variabel for calendar_id check
+  const calendarIdToCheck = form.watch("calendar_id");
+
+  useEffect(() => {
+    const checkCalendarPermissions = async () => {
+      // ... existing code ...
+    };
+
+    if (calendarIdToCheck) {
+      checkCalendarPermissions();
+    }
+  }, [calendarIdToCheck, supabase, form]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
