@@ -52,10 +52,14 @@ function getAdventSundays(year: number): Date[] {
 }
 
 export function getDanishHolidays(year: number): DanishHoliday[] {
-  // Beregn påskedag og relaterede helligdage
+  // Beregn påskedag
   const easterSunday = getEasterSunday(year);
-  const fastelavn = getFastelavn(year);
-  const adventSundays = getAdventSundays(year);
+
+  // Beregn andre bevægelige helligdage baseret på påskedag
+  const palmSunday = addDays(easterSunday, -7); // Palmesøndag
+  const maundyThursday = addDays(easterSunday, -3); // Skærtorsdag
+  const goodFriday = addDays(easterSunday, -2); // Langfredag
+  const easterMonday = addDays(easterSunday, 1); // 2. Påskedag
 
   // Beregn Fars Dag (5. juni eller første søndag i juni hvis 5. juni ikke er en søndag)
   const fathersDayBase = new Date(year, 5, 5);
@@ -106,7 +110,12 @@ export function getDanishHolidays(year: number): DanishHoliday[] {
       type: "special",
       color: "#f59e0b",
     },
-    { date: fastelavn, title: "Fastelavn", type: "special", color: "#f59e0b" },
+    {
+      date: goodFriday,
+      title: "Langfredag",
+      type: "holiday",
+      color: "#3b82f6",
+    },
     {
       date: new Date(year, 2, 8),
       title: "Kvindernes Internationale Kampdag",
@@ -114,28 +123,28 @@ export function getDanishHolidays(year: number): DanishHoliday[] {
       color: "#ec4899",
     },
     {
-      date: addDays(easterSunday, -3),
+      date: maundyThursday,
       title: "Skærtorsdag",
       type: "holiday",
-      color: "#dc2626",
+      color: "#3b82f6",
     },
     {
-      date: addDays(easterSunday, -2),
-      title: "Langfredag",
-      type: "holiday",
-      color: "#dc2626",
+      date: palmSunday,
+      title: "Palmesøndag",
+      type: "special",
+      color: "#3b82f6",
     },
     {
       date: easterSunday,
       title: "Påskedag",
       type: "holiday",
-      color: "#dc2626",
+      color: "#3b82f6",
     },
     {
-      date: addDays(easterSunday, 1),
+      date: easterMonday,
       title: "2. Påskedag",
       type: "holiday",
-      color: "#dc2626",
+      color: "#3b82f6",
     },
     {
       date: addDays(easterSunday, 26),
@@ -344,6 +353,7 @@ export function getDanishHolidays(year: number): DanishHoliday[] {
   ];
 
   // Tilføj adventssøndage
+  const adventSundays = getAdventSundays(year);
   adventSundays.forEach((date, index) => {
     holidays.push({
       date,

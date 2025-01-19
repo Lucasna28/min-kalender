@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,40 +12,115 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Bell, Calendar, Mail, MessageSquare } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+import { useSupabase } from "@/components/providers/supabase-provider";
+import { cn } from "@/lib/utils";
 
 interface NotificationsDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  created_at: string;
+  read: boolean;
+  user_id: string;
+}
+
 export function NotificationsDialog({
   isOpen,
   onOpenChange,
 }: NotificationsDialogProps) {
+  const { supabase } = useSupabase();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const handleUpdateNotifications = async () => {
-    setIsLoading(true);
+  // Hent notifikationer
+  const fetchNotifications = useCallback(async () => {
     try {
-      // Her ville vi normalt opdatere indstillingerne i databasen
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simuleret delay
+      setIsLoading(true);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
 
-      toast({
-        title: "Indstillinger opdateret",
-        description: "Dine notifikationsindstillinger er blevet gemt.",
-      });
+      const { data, error } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setNotifications(data || []);
     } catch (error) {
+      console.error("Fejl ved hentning af notifikationer:", error);
       toast({
         title: "Fejl",
-        description: "Der skete en fejl ved opdatering af indstillingerne.",
+        description: "Der skete en fejl ved hentning af notifikationer",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [supabase, toast]);
+
+  // Marker notifikation som læst
+  const markAsRead = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("notifications")
+        .update({ read: true })
+        .eq("id", id);
+
+      if (error) throw error;
+      await fetchNotifications();
+    } catch (error) {
+      console.error("Fejl ved markering af notifikation som læst:", error);
+      toast({
+        title: "Fejl",
+        description: "Der skete en fejl ved markering af notifikation som læst",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Marker alle som læst
+  const markAllAsRead = async () => {
+    try {
+      setIsLoading(true);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from("notifications")
+        .update({ read: true })
+        .eq("user_id", user.id)
+        .eq("read", false);
+
+      if (error) throw error;
+      await fetchNotifications();
+      toast({
+        title: "Succes",
+        description: "Alle notifikationer er markeret som læst",
+      });
+    } catch (error) {
+      console.error(
+        "Fejl ved markering af alle notifikationer som læst:",
+        error
+      );
+      toast({
+        title: "Fejl",
+        description:
+          "Der skete en fejl ved markering af notifikationer som læst",
         variant: "destructive",
       });
     } finally {
@@ -53,103 +128,73 @@ export function NotificationsDialog({
     }
   };
 
+  // Hent notifikationer når dialogen åbnes
+  useEffect(() => {
+    if (isOpen) {
+      fetchNotifications();
+    }
+  }, [isOpen, fetchNotifications]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Notifikationer</DialogTitle>
-          <DialogDescription>
-            Administrer dine notifikationsindstillinger
-          </DialogDescription>
+          <DialogDescription>Dine seneste notifikationer</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Email Notifikationer</CardTitle>
-              <CardDescription>
-                Håndter hvilke emails du vil modtage
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Mail className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Daglig Oversigt</p>
-                    <p className="text-sm text-muted-foreground">
-                      Få en daglig email med dagens begivenheder
-                    </p>
-                  </div>
-                </div>
-                <Switch defaultChecked />
+          {isLoading ? (
+            <div className="flex items-center justify-center p-4">
+              <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="text-center text-muted-foreground p-4">
+              Ingen notifikationer
+            </div>
+          ) : (
+            <>
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={markAllAsRead}
+                  disabled={!notifications.some((n) => !n.read)}
+                >
+                  Marker alle som læst
+                </Button>
               </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Calendar className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Begivenhedspåmindelser</p>
-                    <p className="text-sm text-muted-foreground">
-                      Modtag påmindelser om kommende begivenheder
-                    </p>
-                  </div>
-                </div>
-                <Switch defaultChecked />
+              <div className="space-y-2">
+                {notifications.map((notification) => (
+                  <Card
+                    key={notification.id}
+                    className={cn(!notification.read && "bg-primary/5")}
+                  >
+                    <CardHeader className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <CardTitle className="text-base">
+                            {notification.title}
+                          </CardTitle>
+                          <CardDescription>
+                            {notification.message}
+                          </CardDescription>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => markAsRead(notification.id)}
+                          disabled={notification.read}
+                        >
+                          {notification.read ? "Læst" : "Marker som læst"}
+                        </Button>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                ))}
               </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <MessageSquare className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Invitationer</p>
-                    <p className="text-sm text-muted-foreground">
-                      Få besked når du modtager nye invitationer
-                    </p>
-                  </div>
-                </div>
-                <Switch defaultChecked />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Push Notifikationer</CardTitle>
-              <CardDescription>Håndter browser notifikationer</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Bell className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Browser Notifikationer</p>
-                    <p className="text-sm text-muted-foreground">
-                      Modtag notifikationer i din browser
-                    </p>
-                  </div>
-                </div>
-                <Switch />
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Annuller
-            </Button>
-            <Button onClick={handleUpdateNotifications} disabled={isLoading}>
-              {isLoading ? "Gemmer..." : "Gem ændringer"}
-            </Button>
-          </div>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>

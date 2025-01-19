@@ -1,0 +1,136 @@
+/* Print styles */
+@media print {
+  @page {
+    size: landscape;
+    margin: 0.7cm;
+  }
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background: white !important;
+  }
+
+  /* Skjul UI elementer */
+  .no-print,
+  .navigation,
+  button,
+  nav,
+  .today-indicator {
+    display: none !important;
+  }
+
+  /* Kalender layout */
+  .calendar-content {
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .calendar-grid {
+    width: 100% !important;
+    height: 100% !important;
+    page-break-inside: avoid;
+    border-collapse: collapse !important;
+  }
+
+  /* Kalender header */
+  .calendar-header {
+    text-align: center !important;
+    margin-bottom: 1.2cm !important;
+  }
+
+  .calendar-header h1 {
+    font-size: 28pt !important;
+    font-weight: 800 !important;
+    margin: 0 !important;
+    color: #111827 !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  /* Ugedage header */
+  th {
+    padding: 0.4cm !important;
+    font-size: 11pt !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    background-color: #f8fafc !important;
+    color: #334155 !important;
+    border: 1.5px solid #e2e8f0 !important;
+    letter-spacing: 0.05em !important;
+  }
+
+  /* Kalender celler */
+  td {
+    height: 10em !important;
+    border: 1.5px solid #e2e8f0 !important;
+    padding: 0.5cm 0.4cm !important;
+    vertical-align: top !important;
+    background: white !important;
+  }
+
+  /* Fjern ALLE markeringer af dagens dato */
+  td.today,
+  td.today *,
+  .today,
+  [data-today="true"],
+  td[aria-current="date"],
+  .current-day {
+    background-color: white !important;
+    border-color: #e2e8f0 !important;
+    color: inherit !important;
+    box-shadow: none !important;
+  }
+
+  /* Datoer */
+  td > div:first-child {
+    font-size: 12pt !important;
+    font-weight: 500 !important;
+    color: #334155 !important;
+    margin-bottom: 0.3cm !important;
+    letter-spacing: -0.01em !important;
+    background: white !important;
+  }
+
+  /* Events */
+  .event-item {
+    padding: 0.25cm 0.4cm !important;
+    margin-bottom: 0.2cm !important;
+    border-radius: 6px !important;
+    font-size: 10pt !important;
+    line-height: 1.3 !important;
+    break-inside: avoid !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  }
+
+  /* Helligdage */
+  .holiday-event {
+    background-color: #fef2f2 !important;
+    color: #991b1b !important;
+    border: 1px solid #fee2e2 !important;
+    font-weight: 500 !important;
+  }
+
+  /* Dage udenfor måneden */
+  .outside-month {
+    color: #94a3b8 !important;
+    background-color: #f9fafb !important;
+  }
+
+  /* Print farver */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Forbedret typografi */
+  * {
+    font-family: system-ui, -apple-system, sans-serif !important;
+  }
+}

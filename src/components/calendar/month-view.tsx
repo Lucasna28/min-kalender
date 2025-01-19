@@ -246,13 +246,13 @@ export function MonthView({
   const numberOfWeeks = Math.ceil(days.length / 7);
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-full bg-background print:bg-white">
       {/* Ugedage header */}
-      <div className="grid grid-cols-7 text-sm font-medium text-muted-foreground border-b border-border">
+      <div className="grid grid-cols-7 text-sm font-medium text-muted-foreground border-b border-border print:border-gray-200">
         {["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"].map((day) => (
           <div
             key={day}
-            className="h-10 flex items-center justify-center border-r border-border"
+            className="h-10 flex items-center justify-center border-r border-border print:border-gray-200 print:text-gray-600 print:font-semibold print:text-base"
           >
             {day}
           </div>
@@ -270,9 +270,9 @@ export function MonthView({
             duration: 0.3,
             ease: "easeOut",
           }}
-          className="grid grid-cols-7 flex-1"
+          className="grid grid-cols-7 flex-1 print:gap-0"
           style={{
-            gridTemplateRows: `repeat(${numberOfWeeks}, minmax(100px, 1fr))`,
+            gridTemplateRows: `repeat(${numberOfWeeks}, minmax(120px, 1fr))`,
           }}
         >
           {days.map((day, dayIdx) => {
@@ -285,10 +285,10 @@ export function MonthView({
               <div
                 key={day.toISOString()}
                 className={cn(
-                  "border-r border-b border-border p-1 relative transition-colors duration-200",
-                  !isCurrentMonth && "bg-muted/30",
-                  isToday(day) && "bg-primary/5",
-                  "hover:bg-accent/50 cursor-pointer group"
+                  "border-r border-b border-border print:border-gray-200 p-1 relative transition-colors duration-200",
+                  !isCurrentMonth && "bg-muted/30 print:bg-gray-50",
+                  isToday(day) && "bg-primary/5 print:bg-transparent",
+                  "hover:bg-accent/50 cursor-pointer group print:hover:bg-transparent"
                 )}
                 onClick={() =>
                   onDateChange(day, { shouldOpenCreateEvent: true })
@@ -296,7 +296,7 @@ export function MonthView({
               >
                 {/* Ugenummer (kun for første dag i ugen) */}
                 {isFirstInWeek && (
-                  <div className="absolute -left-8 top-1 text-xs text-muted-foreground">
+                  <div className="absolute -left-8 top-1 text-xs text-muted-foreground print:text-gray-500 print:font-medium">
                     {weekNumber}
                   </div>
                 )}
@@ -304,13 +304,15 @@ export function MonthView({
                 {/* Dato */}
                 <div
                   className={cn(
-                    "text-sm font-medium h-6 flex items-center justify-end px-1",
-                    !isCurrentMonth && "text-muted-foreground/50 italic",
-                    isToday(day) && "text-primary font-bold"
+                    "text-sm font-medium h-6 flex items-center justify-end px-1 print:text-base print:font-semibold",
+                    !isCurrentMonth &&
+                      "text-muted-foreground/50 italic print:text-gray-400",
+                    isToday(day) &&
+                      "text-primary font-bold print:text-inherit print:font-normal"
                   )}
                 >
                   {!isCurrentMonth && (
-                    <span className="text-xs mr-1 text-muted-foreground/40">
+                    <span className="text-xs mr-1 text-muted-foreground/40 print:text-gray-400">
                       {format(day, "MMM", { locale: da })}
                     </span>
                   )}
@@ -324,7 +326,7 @@ export function MonthView({
                     <Skeleton className="h-4 w-1/2" />
                   </div>
                 ) : (
-                  <div className="space-y-1 max-h-[calc(100%-1.5rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/30">
+                  <div className="space-y-1 max-h-[calc(100%-1.5rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/30 print:max-h-none print:overflow-visible">
                     {dayEvents.map((event) => (
                       <TooltipProvider key={event.id}>
                         <Tooltip delayDuration={200}>
@@ -334,7 +336,8 @@ export function MonthView({
                                 event={event}
                                 className={cn(
                                   "text-xs p-1 rounded-sm shadow-sm cursor-pointer transition-all duration-200",
-                                  "hover:shadow-md hover:scale-[1.02]",
+                                  "hover:shadow-md hover:scale-[1.02] print:hover:shadow-none print:hover:scale-100",
+                                  "print:text-sm print:p-1.5 print:rounded-md print:border print:shadow-none",
                                   !isCurrentMonth && "opacity-50"
                                 )}
                                 onClick={(e) => {
@@ -346,7 +349,7 @@ export function MonthView({
                           </TooltipTrigger>
                           <TooltipContent
                             side="right"
-                            className="max-w-[300px]"
+                            className="max-w-[300px] print:hidden"
                           >
                             <div className="space-y-1">
                               <p className="font-medium">{event.title}</p>
@@ -373,7 +376,7 @@ export function MonthView({
 
                 {/* Mere indikator hvis der er flere events end der kan vises */}
                 {dayEvents.length > 4 && (
-                  <div className="absolute bottom-1 right-1 text-xs text-muted-foreground bg-background/80 px-1 rounded">
+                  <div className="absolute bottom-1 right-1 text-xs text-muted-foreground bg-background/80 px-1 rounded print:hidden">
                     +{dayEvents.length - 4} mere
                   </div>
                 )}

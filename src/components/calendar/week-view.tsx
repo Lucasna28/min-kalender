@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   format,
   startOfWeek,
@@ -14,6 +14,7 @@ import {
   isWithinInterval,
   isSameDay,
   addMinutes,
+  addDays,
 } from "date-fns";
 import { da } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -50,29 +51,21 @@ export function WeekView({
   isLoading,
   onDateChange,
 }: WeekViewProps) {
-  const [days, setDays] = useState<Date[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
     null
   );
-  const [currentTimeIndicatorTop, setCurrentTimeIndicatorTop] = useState(0);
   const [danishHolidays, setDanishHolidays] = useState<DanishHoliday[]>([]);
   const [mounted, setMounted] = useState(false);
   const timeGridRef = useRef<HTMLDivElement>(null);
 
-  // Marker at komponenten er mounted
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Beregn ugenummer og dage i ugen
+  const weekNumber = getWeekNumber(date);
+  const weekStart = startOfWeek(date, { weekStartsOn: 1 });
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
-  // Generer dage kun når komponenten er mounted
-  useEffect(() => {
-    if (mounted) {
-      const start = startOfWeek(date, { weekStartsOn: 1 });
-      const end = endOfWeek(date, { weekStartsOn: 1 });
-      const daysInWeek = eachDayOfInterval({ start, end });
-      setDays(daysInWeek);
-    }
-  }, [date, mounted]);
+  // Beregn tidspunkter og current time indicator
+  const timeSlots = Array.from({ length: 24 }, (_, i) => i);
+  const [currentTimeIndicatorTop, setCurrentTimeIndicatorTop] = useState(0);
 
   // Opdater current time indicator position kun på client side
   useEffect(() => {
@@ -89,6 +82,11 @@ export function WeekView({
     const interval = setInterval(updateCurrentTimeIndicator, 60000);
     return () => clearInterval(interval);
   }, [mounted]);
+
+  // Marker at komponenten er mounted
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Scroll til nuværende tid kun på client side
   useEffect(() => {
@@ -108,12 +106,6 @@ export function WeekView({
 
     scrollToCurrentTime();
   }, [mounted]);
-
-  // Render kun ugenummer når komponenten er mounted
-  const weekNumber = mounted && days[0] ? getWeekNumber(days[0]) : null;
-
-  // Generer timer (24 timer i stedet for 48 halvtimer)
-  const timeSlots = Array.from({ length: 24 }, (_, i) => i);
 
   // Hent danske helligdage når året ændrer sig
   useEffect(() => {
@@ -189,33 +181,49 @@ export function WeekView({
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-background">
+    <div className="flex flex-col h-full overflow-hidden bg-background print:bg-white print:h-auto">
       {/* Header med ugedage og heldagsbegivenheder */}
-      <div className="sticky top-0 z-10 flex-none bg-background border-b border-border">
-        <div className="grid grid-cols-8">
-          <div className="flex items-center justify-center font-medium text-muted-foreground p-2 border-r border-border">
-            {weekNumber ? `Uge ${weekNumber}` : ""}
+      <div className="sticky top-0 z-10 flex-none bg-background border-b border-border print:border-gray-200 print:pb-4">
+        <div className="grid grid-cols-8 print:grid-cols-7">
+          {/* Ugenummer */}
+          <div className="w-20 border-r border-border print:hidden">
+            Uge {weekNumber}
           </div>
+
+          {/* Print header med måned og ugenummer */}
+          <div className="hidden print:block print:col-span-7 print:text-center print:mb-4">
+            <h1 className="text-2xl font-bold text-gray-900">
+              {days[0] && format(days[0], "MMMM yyyy", { locale: da })}
+              <span className="text-gray-600 font-medium text-lg ml-2">
+                · Uge {weekNumber}
+              </span>
+            </h1>
+          </div>
+
+          {/* Dage */}
           <div className="col-span-7 grid grid-cols-7 text-sm leading-6 text-muted-foreground">
             {days.map((day, i) => (
-              <div key={i} className="flex flex-col border-r border-border">
+              <div
+                key={i}
+                className="flex flex-col border-r border-border print:border-gray-200"
+              >
                 {/* Dato header */}
-                <div className="p-2 text-center">
-                  <span className="text-sm">
-                    {format(day, "EEE", { locale: da })}
-                  </span>
-                  <span className="text-sm ml-1">
-                    {format(day, "d", { locale: da })}
-                  </span>
+                <div className="p-2 text-center border-b border-border print:border-gray-200 print:py-3">
+                  <div className="print:text-lg print:font-bold print:text-gray-900">
+                    {format(day, "EEEE", { locale: da })}
+                  </div>
+                  <div className="print:text-base print:font-medium print:text-gray-600 print:mt-1">
+                    {format(day, "d. MMM", { locale: da })}
+                  </div>
                 </div>
 
                 {/* Heldagsbegivenheder */}
-                <div className="min-h-[60px] p-1 space-y-1 border-t border-border">
+                <div className="min-h-[60px] p-1 space-y-1 print:min-h-[100px] print:p-3 print:space-y-2">
                   {getAllDayEvents(day).map((event) => (
                     <EventItem
                       key={event.id}
                       event={event}
-                      className="text-xs p-1 rounded-sm shadow-sm"
+                      className="text-xs p-1 rounded-sm shadow-sm print:text-sm print:p-2.5 print:rounded-md print:border print:shadow-none print:font-medium"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedEvent(event);
@@ -231,24 +239,18 @@ export function WeekView({
 
       {/* Tidsgrid */}
       <div
-        className="flex-1 grid grid-cols-8 overflow-y-auto relative bg-background/95 scroll-smooth"
+        className="flex-1 grid grid-cols-8 overflow-y-auto relative bg-background/95 scroll-smooth print:overflow-visible print:h-auto print:grid-cols-7 print:bg-white"
         ref={timeGridRef}
       >
-        {/* Tidslinje */}
-        <div className="border-r border-border/50 bg-muted/30 sticky left-0">
+        {/* Tidslinje - skjult ved print */}
+        <div className="border-r border-border print:hidden">
           {timeSlots.map((hour) => (
             <div
               key={hour}
-              className="h-20 relative flex items-center justify-end pr-2 border-t border-border/40"
+              className="h-20 border-b border-border relative group"
             >
-              <span className="text-xs text-muted-foreground whitespace-nowrap font-medium">
-                {format(
-                  setMinutes(
-                    setHours(new Date(), Math.floor(hour)),
-                    (hour % 1) * 60
-                  ),
-                  "HH:mm"
-                )}
+              <span className="absolute -top-3 right-2 text-sm text-muted-foreground">
+                {hour}:00
               </span>
             </div>
           ))}
@@ -258,46 +260,19 @@ export function WeekView({
         {days.map((day) => (
           <div
             key={day.toISOString()}
-            className={cn(
-              "relative border-r border-border/50 transition-colors duration-200",
-              isToday(day) && "bg-primary/5",
-              "hover:bg-muted/20"
-            )}
+            className="relative border-r border-border print:border-gray-200"
+            onClick={() => onDateChange(day)}
           >
-            {/* Tidsgrid baggrund */}
+            {/* Timegrid */}
             {timeSlots.map((hour) => (
               <div
                 key={hour}
-                className={cn(
-                  "h-20 border-t border-border/40 relative group transition-colors duration-200",
-                  "hover:bg-muted/50"
-                )}
-                onClick={() => {
-                  const selectedDate = setMinutes(
-                    setHours(day, Math.floor(hour)),
-                    (hour % 1) * 60
-                  );
-                  onDateChange(selectedDate, { shouldOpenCreateEvent: true });
-                }}
-              >
-                {/* Hover effekt med klokkeslæt */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="absolute right-1 top-1 bg-background/95 px-1.5 py-0.5 rounded text-xs text-muted-foreground shadow-sm">
-                    {format(
-                      setMinutes(
-                        setHours(day, Math.floor(hour)),
-                        (hour % 1) * 60
-                      ),
-                      "HH:mm"
-                    )}
-                  </div>
-                </div>
-              </div>
+                className="h-20 border-b border-border print:border-gray-200 relative group print:h-28"
+              />
             ))}
 
-            {/* Events for denne dag */}
+            {/* Events */}
             {getEventsForDay(day).map((event) => {
-              // Konverter start og slut tid til minutter
               const [startHour, startMinute] = (event.start_time || "00:00")
                 .split(":")
                 .map(Number);
@@ -305,13 +280,10 @@ export function WeekView({
                 .split(":")
                 .map(Number);
 
-              // Beregn total minutter siden midnat
               const startMinutes = startHour * 60 + startMinute;
               const endMinutes = endHour * 60 + endMinute;
 
-              // Beregn position og højde
-              // Hver halv time er 40px (h-10), så en hel time er 80px
-              const pixelsPerMinute = 80 / 60; // 80px per time / 60 minutter = 1.333... px per minut
+              const pixelsPerMinute = 112 / 60; // Justeret for print højde (28rem * 4)
               const top = startMinutes * pixelsPerMinute;
               const height = (endMinutes - startMinutes) * pixelsPerMinute;
 
@@ -319,11 +291,11 @@ export function WeekView({
                 <EventItem
                   key={event.id}
                   event={event}
-                  className="absolute left-1 right-1 z-10 rounded-md shadow-sm"
+                  className="absolute left-1 right-1 z-10 rounded-md shadow-sm print:left-3 print:right-3 print:text-base print:font-medium print:p-2"
                   style={{
                     top: `${top}px`,
                     height: `${height}px`,
-                    minHeight: "20px",
+                    minHeight: "24px",
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -333,12 +305,12 @@ export function WeekView({
               );
             })}
 
-            {/* Current time indicator */}
+            {/* Current time indicator - skjult ved print */}
             {isToday(day) && (
               <motion.div
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
-                className="absolute left-0 right-0 z-50"
+                className="absolute left-0 right-0 z-50 print:hidden"
                 style={{ top: `${currentTimeIndicatorTop}%` }}
               >
                 <div className="relative">

@@ -58,6 +58,13 @@ import {
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Kalender typer med emojis og ikoner
 const CALENDAR_TYPES = [
@@ -112,6 +119,7 @@ interface SidebarProps {
   onShowHolidaysChange?: (show: boolean) => void;
   showFunHolidays?: boolean;
   onShowFunHolidaysChange?: (show: boolean) => void;
+  handlePrint: () => void;
 }
 
 const VIEW_OPTIONS: Record<
@@ -139,6 +147,7 @@ export default function CalendarSidebar({
   onShowHolidaysChange = () => {},
   showFunHolidays = true,
   onShowFunHolidaysChange = () => {},
+  handlePrint,
 }: SidebarProps) {
   const [isCreateCalendarOpen, setIsCreateCalendarOpen] = useState(false);
   const [selectedCalendarForEdit, setSelectedCalendarForEdit] =
@@ -148,6 +157,7 @@ export default function CalendarSidebar({
   const { supabase } = useSupabase();
   const router = useRouter();
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [printView, setPrintView] = useState<"day" | "week" | "month">("month");
 
   useEffect(() => {
     const getUserEmail = async () => {
@@ -309,6 +319,11 @@ export default function CalendarSidebar({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [goToToday, goToPreviousDate, goToNextDate]);
+
+  const handlePrintClick = () => {
+    onViewChange(printView);
+    handlePrint();
+  };
 
   return (
     <>
@@ -582,6 +597,43 @@ export default function CalendarSidebar({
             </div>
           </SidebarSection>
         </SidebarContent>
+
+        <Separator className="my-4" />
+
+        {/* Print sektion */}
+        <div className="px-4 space-y-4">
+          <h3 className="font-medium">Print kalender</h3>
+          <div className="space-y-2">
+            <Select
+              value={printView}
+              onValueChange={(value: "day" | "week" | "month") =>
+                setPrintView(value)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Vælg visning" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="day">Dag</SelectItem>
+                <SelectItem value="week">Uge</SelectItem>
+                <SelectItem value="month">Måned</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={handlePrintClick}
+            >
+              <CalendarIcon className="h-4 w-4 mr-2" />
+              Print{" "}
+              {printView === "day"
+                ? "dag"
+                : printView === "week"
+                ? "uge"
+                : "måned"}
+            </Button>
+          </div>
+        </div>
 
         <SidebarFooter className="border-t flex-shrink-0">
           <div className="p-2 space-y-2">

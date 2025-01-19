@@ -113,12 +113,20 @@ export function NotificationDropdown() {
         <Button
           variant="ghost"
           size="icon"
-          className="relative hover:bg-primary/10 hover:text-primary"
+          className="relative"
+          aria-label="Notifikationer"
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-medium text-primary-foreground flex items-center justify-center">
-              {unreadCount}
+            <span
+              className={cn(
+                "absolute -right-1 -top-1 flex items-center justify-center",
+                unreadCount === 1
+                  ? "min-w-[18px] h-[18px] rounded-full bg-red-500 text-[10px] text-white font-medium"
+                  : "w-2 h-2 rounded-full bg-red-500"
+              )}
+            >
+              {unreadCount === 1 && "1"}
             </span>
           )}
         </Button>

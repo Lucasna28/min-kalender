@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, forwardRef } from "react";
 import CalendarView, {
   CalendarViewType,
 } from "@/components/calendar/calendar-view";
@@ -41,6 +41,8 @@ import { ProfileSettingsDialog } from "@/components/profile/profile-settings-dia
 import { NotificationsDialog } from "@/components/notifications/notifications-dialog";
 import { NotificationsListDialog } from "@/components/notifications/notifications-list-dialog";
 import { TutorialDialog } from "@/components/tutorial/tutorial-dialog";
+import { useReactToPrint } from "react-to-print";
+import { cn } from "@/lib/utils";
 
 export default function CalendarPage() {
   const [view, setView] = useState<CalendarViewType>("month");
@@ -49,9 +51,56 @@ export default function CalendarPage() {
   const [selectedCalendarId, setSelectedCalendarId] = useState<string | null>(
     null
   );
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
   const [showHolidays, setShowHolidays] = useState(true);
+  const calendarRef = useRef<HTMLDivElement>(null);
+  const handlePrint = useReactToPrint({
+    documentTitle: `Kalender - ${format(selectedDate, "MMMM yyyy", {
+      locale: da,
+    })}`,
+    contentRef: calendarRef,
+    pageStyle: `
+      @page {
+        size: A4 landscape;
+        margin: 0.5cm;
+      }
+      @media print {
+        html, body {
+          width: 297mm;
+          height: 210mm;
+          margin: 0;
+          padding: 0;
+        }
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .calendar-content {
+          width: 100%;
+          height: 100%;
+          page-break-inside: avoid;
+        }
+        .calendar-grid {
+          height: 180mm !important;
+          margin: 0 !important;
+          padding: 0.5cm !important;
+        }
+        .navigation, .no-print {
+          display: none !important;
+        }
+        td {
+          height: 100px !important;
+          border: 1px solid #e5e7eb !important;
+        }
+        th {
+          padding: 8px !important;
+          border: 1px solid #e5e7eb !important;
+          background-color: #f9fafb !important;
+        }
+      }
+    `,
+  });
   const { theme, setTheme } = useTheme();
   const { supabase } = useSupabase();
   const router = useRouter();
@@ -63,6 +112,7 @@ export default function CalendarPage() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialProgress, setTutorialProgress] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Tjek om brugeren er ny når komponenten indlæses
   useEffect(() => {
@@ -98,6 +148,46 @@ export default function CalendarPage() {
 
     checkNewUser();
   }, [supabase.auth]);
+
+  // Hent ulæste notifikationer
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { count } = await supabase
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("read", false);
+
+      setUnreadCount(count || 0);
+    };
+
+    fetchUnreadCount();
+
+    // Subscribe til nye notifikationer
+    const channel = supabase
+      .channel("notifications")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+        },
+        () => {
+          fetchUnreadCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]);
 
   const handleLogout = async () => {
     try {
@@ -280,7 +370,18 @@ export default function CalendarPage() {
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full" />
                     <Bell className="h-5 w-5 group-hover:rotate-12 transition-transform duration-300 relative z-10" />
-                    <span className="absolute top-2 right-2 h-2 w-2 bg-primary rounded-full animate-pulse group-hover:animate-ping" />
+                    {unreadCount > 0 && (
+                      <span
+                        className={cn(
+                          "absolute -right-1 -top-1 flex items-center justify-center",
+                          unreadCount === 1
+                            ? "min-w-[18px] h-[18px] rounded-full bg-red-500 text-[10px] text-white font-medium"
+                            : "min-w-[18px] h-[18px] rounded-full bg-red-500 text-[10px] text-white font-medium"
+                        )}
+                      >
+                        {unreadCount}
+                      </span>
+                    )}
                     <span className="sr-only">Notifikationer</span>
                   </Button>
                 </TooltipTrigger>
@@ -495,6 +596,7 @@ export default function CalendarPage() {
         transition-transform duration-300 ease-in-out
         ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
         sm:relative sm:translate-x-0
+        print:hidden
       `}
       >
         <CalendarSidebar
@@ -510,12 +612,14 @@ export default function CalendarPage() {
           onOpenChange={setIsSidebarOpen}
           showHolidays={showHolidays}
           onShowHolidaysChange={setShowHolidays}
+          handlePrint={handlePrint}
         />
       </div>
 
       {/* Hovedindhold */}
-      <div className="flex-1 mt-[64px] sm:mt-[64px]">
+      <div className="flex-1 mt-[64px] sm:mt-[64px] print:mt-0">
         <CalendarView
+          ref={calendarRef}
           view={view}
           selectedDate={selectedDate}
           onDateChange={setSelectedDate}

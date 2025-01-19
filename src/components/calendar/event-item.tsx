@@ -27,6 +27,7 @@ import { Temadag } from "./special-days/temadag";
 import { Advent } from "./special-days/advent";
 import { Pizzadag } from "./special-days/pizzadag";
 import confetti from "canvas-confetti";
+import { Palmesondag } from "./special-days/palmesondag";
 
 interface EventItemProps {
   event: CalendarEvent;
@@ -123,6 +124,22 @@ export function EventItem({
   const isTimeChange =
     isDanishHoliday &&
     (title.includes("sommertid") || title.includes("vintertid"));
+
+  // Check for specielle dage
+  const isPalmSunday =
+    event.calendar_id === "danish-holidays" &&
+    event.title.includes("Palmesøndag");
+
+  if (isPalmSunday) {
+    return (
+      <Palmesondag
+        event={event}
+        className={className}
+        style={style}
+        onClick={onClick}
+      />
+    );
+  }
 
   if (isTimeChange) {
     const isSummerTime = event.title.includes("Sommertid");
