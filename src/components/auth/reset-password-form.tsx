@@ -11,14 +11,21 @@ import { Loader2, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { z } from "zod";
+import { useRouter } from "next/navigation";
 
 const resetSchema = z.object({
   email: z.string().email("Indtast en gyldig email"),
 });
 
+interface AuthError {
+  message: string;
+  status?: number;
+}
+
 export default function ResetPasswordForm() {
   const { supabase } = useSupabase();
   const { toast } = useToast();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -43,7 +50,7 @@ export default function ResetPasswordForm() {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(
         email,
         {
-          redirectTo: `${window.location.origin}/reset-password/confirm`,
+          redirectTo: `${window.location.origin}/update-password`,
         }
       );
 
@@ -52,13 +59,16 @@ export default function ResetPasswordForm() {
       setIsSubmitted(true);
       toast({
         title: "Email sendt",
-        description:
-          "Vi har sendt dig en email med instruktioner til at nulstille din adgangskode.",
+        description: "Tjek din indbakke for at nulstille din adgangskode",
       });
-    } catch (error: any) {
+
+      router.push("/check-email");
+    } catch (err: unknown) {
+      const authError = err as AuthError;
       toast({
         title: "Fejl",
-        description: "Der skete en fejl. Prøv igen senere.",
+        description:
+          authError.message || "Der skete en fejl. Prøv igen senere.",
         variant: "destructive",
       });
     } finally {

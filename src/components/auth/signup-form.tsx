@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
+import { AuthError } from "@supabase/supabase-js";
 
 const signupSchema = z.object({
   name: z
@@ -113,49 +114,38 @@ export default function SignupForm() {
     setIsLoading(true);
 
     try {
-      const { data: authData, error: signUpError } = await supabase.auth.signUp(
-        {
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: {
-              full_name: formData.name,
-            },
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.name,
           },
-        }
-      );
-
-      if (signUpError) throw signUpError;
-      if (!authData.user) throw new Error("Ingen bruger returneret");
-
-      toast({
-        title: "Konto oprettet",
-        description:
-          "Din konto er blevet oprettet. Tjek din email for at bekræfte din konto.",
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
 
-      router.push("/login");
-    } catch (error) {
-      console.error("Fejl ved oprettelse:", error);
+      if (error) throw error;
+
+      if (data?.user) {
+        toast({
+          title: "Konto oprettet",
+          description: "Tjek din email for at bekræfte din konto",
+        });
+        router.push("/check-email");
+      }
+    } catch (error: unknown) {
+      const authError = error as AuthError;
       toast({
-        title: "Fejl ved oprettelse",
+        title: "Fejl",
         description:
-          error instanceof Error ? error.message : "Der skete en uventet fejl",
+          authError.message === "User already registered"
+            ? "Denne email er allerede registreret"
+            : "Der skete en fejl ved oprettelse af kontoen",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const getErrorMessage = (error: string) => {
-    switch (error) {
-      case "User already registered":
-        return "Denne email er allerede registreret";
-      case "Password should be at least 6 characters":
-        return "Adgangskoden skal være mindst 6 tegn";
-      default:
-        return "Der skete en fejl. Prøv igen senere";
     }
   };
 

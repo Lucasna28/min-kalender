@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, forwardRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import CalendarView, {
   CalendarViewType,
 } from "@/components/calendar/calendar-view";
@@ -45,6 +45,7 @@ import { useReactToPrint } from "react-to-print";
 import { cn } from "@/lib/utils";
 
 export default function CalendarPage() {
+  // State hooks
   const [view, setView] = useState<CalendarViewType>("month");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [visibleCalendarIds, setVisibleCalendarIds] = useState<string[]>([]);
@@ -54,7 +55,24 @@ export default function CalendarPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
   const [showHolidays, setShowHolidays] = useState(true);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotificationsSettingsOpen, setIsNotificationsSettingsOpen] =
+    useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialProgress, setTutorialProgress] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [mounted, setMounted] = useState(false);
+
+  // Refs og andre hooks
   const calendarRef = useRef<HTMLDivElement>(null);
+  const { theme, setTheme } = useTheme();
+  const { supabase } = useSupabase();
+  const router = useRouter();
+
+  // Print hook
   const handlePrint = useReactToPrint({
     documentTitle: `Kalender - ${format(selectedDate, "MMMM yyyy", {
       locale: da,
@@ -101,20 +119,12 @@ export default function CalendarPage() {
       }
     `,
   });
-  const { theme, setTheme } = useTheme();
-  const { supabase } = useSupabase();
-  const router = useRouter();
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isNotificationsSettingsOpen, setIsNotificationsSettingsOpen] =
-    useState(false);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(false);
-  const [tutorialProgress, setTutorialProgress] = useState(0);
-  const [unreadCount, setUnreadCount] = useState(0);
 
-  // Tjek om brugeren er ny når komponenten indlæses
+  // Effects
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     const checkNewUser = async () => {
       try {
@@ -149,7 +159,6 @@ export default function CalendarPage() {
     checkNewUser();
   }, [supabase.auth]);
 
-  // Hent ulæste notifikationer
   useEffect(() => {
     const fetchUnreadCount = async () => {
       const {
@@ -189,6 +198,16 @@ export default function CalendarPage() {
     };
   }, [supabase]);
 
+  // Render placeholder under server-side rendering
+  if (!mounted) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
+  // Event handlers
   const handleLogout = async () => {
     try {
       setIsLoading(true);
@@ -342,22 +361,34 @@ export default function CalendarPage() {
               <span className="relative z-10">I dag</span>
             </Button>
             {/* Desktop tema toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 hidden sm:flex hover:bg-accent/50 transition-all duration-300 hover:scale-105 active:scale-95 relative overflow-hidden group before:absolute before:inset-0 before:rounded-full before:bg-primary/5 before:scale-0 before:hover:scale-100 before:transition-transform before:duration-300"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full" />
-              <div className="relative w-5 h-5">
-                {theme === "dark" ? (
-                  <Sun className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300 absolute animate-in fade-in-0 group-hover:text-yellow-500" />
-                ) : (
-                  <Moon className="h-5 w-5 group-hover:-rotate-90 transition-transform duration-300 absolute animate-in fade-in-0 group-hover:text-blue-500" />
-                )}
-              </div>
-              <span className="sr-only">Skift tema</span>
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 hover:bg-accent/50 transition-all duration-300 hover:scale-105 active:scale-95 relative group overflow-hidden before:absolute before:inset-0 before:rounded-full before:bg-primary/5 before:scale-0 before:hover:scale-100 before:transition-transform before:duration-300"
+                    onClick={() =>
+                      setTheme(theme === "light" ? "dark" : "light")
+                    }
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full" />
+                    {theme === "light" ? (
+                      <Moon className="h-5 w-5 group-hover:-rotate-90 transition-transform duration-300 relative z-10" />
+                    ) : (
+                      <Sun className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300 relative z-10" />
+                    )}
+                    <span className="sr-only">Skift tema</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="bottom"
+                  className="bg-background/80 backdrop-blur-lg border border-border/40 shadow-lg"
+                >
+                  <p>Skift tema</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             {/* Notifikationer */}
             <TooltipProvider>
               <Tooltip>

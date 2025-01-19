@@ -20,6 +20,11 @@ const loginSchema = z.object({
   password: z.string().min(6, "Adgangskoden skal være mindst 6 tegn"),
 });
 
+interface AuthError {
+  message: string;
+  status?: number;
+}
+
 export default function AuthForm() {
   const { supabase } = useSupabase();
   const { toast } = useToast();
@@ -32,6 +37,7 @@ export default function AuthForm() {
     {}
   );
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<AuthError | null>(null);
 
   // Tjek for fejl parameter i URL
   useEffect(() => {
@@ -93,12 +99,11 @@ export default function AuthForm() {
         // Ingen session - vis fejl
         throw new Error("Kunne ikke oprette session");
       }
-    } catch (error: any) {
-      console.error("Login error:", error);
-      toast({
-        title: "Fejl",
-        description: getErrorMessage(error.message),
-        variant: "destructive",
+    } catch (error: unknown) {
+      const authError = error as AuthError;
+      setError({
+        message: authError.message || "Der skete en fejl ved login",
+        status: authError.status,
       });
     } finally {
       setIsLoading(false);

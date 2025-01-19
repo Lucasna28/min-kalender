@@ -4,49 +4,67 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import { useSupabase } from "@/components/providers/supabase-provider";
 import { useToast } from "@/components/ui/use-toast";
-import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 
-const loginSchema = z.object({
-  email: z.string().email("Ugyldig email"),
-  password: z.string().min(6, "Adgangskoden skal være mindst 6 tegn"),
+const formSchema = z.object({
+  email: z.string().email("Indtast en gyldig email"),
 });
 
-type LoginFormData = z.infer<typeof loginSchema>;
+type FormData = z.infer<typeof formSchema>;
 
-export default function LoginForm() {
-  const [isLoading, setIsLoading] = useState(false);
-  const { supabase } = useSupabase();
-  const { toast } = useToast();
-  const router = useRouter();
+interface LoginFormProps {
+  onSubmit: (email: string) => Promise<void>;
+  isLoading?: boolean;
+}
 
-  const handleSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
-    try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-      });
+export function LoginForm({ onSubmit, isLoading = false }: LoginFormProps) {
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+    },
+  });
 
-      if (signInError) throw signInError;
-
-      toast({
-        title: "Logget ind",
-        description: "Du er nu logget ind.",
-      });
-
-      router.push("/calendar");
-    } catch (error) {
-      console.error("Fejl ved login:", error);
-      toast({
-        title: "Fejl ved login",
-        description:
-          error instanceof Error ? error.message : "Der skete en uventet fejl",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return <div>{/* Render your form components here */}</div>;
+  return (
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit((data) => onSubmit(data.email))}
+        className="space-y-4"
+      >
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input
+                  type="email"
+                  placeholder="din@email.dk"
+                  {...field}
+                  disabled={isLoading}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? "Sender..." : "Send magisk link"}
+        </Button>
+      </form>
+    </Form>
+  );
 }
