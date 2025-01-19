@@ -1,16 +1,4 @@
-import {
-  addDays,
-  setMonth,
-  setDate,
-  getDay,
-  addWeeks,
-  setYear,
-  lastDayOfMonth,
-  startOfMonth,
-  nextSunday,
-  previousSunday,
-  getMonth,
-} from "date-fns";
+import { addDays, lastDayOfMonth, nextSunday, startOfMonth } from "date-fns";
 
 // Beregn påskedag for et givet år
 // Baseret på Butcher's algoritme
@@ -94,18 +82,26 @@ export function getDanishHolidays(year: number) {
     { date: christmas, name: "Juledag", type: "holiday" },
     { date: boxingDay, name: "Anden juledag", type: "holiday" },
     { date: newYearsEve, name: "Nytårsaften", type: "holiday" },
-    
+
     // Mærkedage
     { date: new Date(year, 1, 14), name: "Valentinsdag", type: "observance" },
-    { date: daylightSavingStart, name: "Sommertid starter", type: "observance" },
+    {
+      date: daylightSavingStart,
+      name: "Sommertid starter",
+      type: "observance",
+    },
     { date: mothersDay, name: "Mors dag", type: "observance" },
     { date: fathersDay, name: "Fars dag", type: "observance" },
     { date: new Date(year, 5, 21), name: "Sommersolhverv", type: "observance" },
     { date: new Date(year, 9, 31), name: "Halloween", type: "observance" },
     { date: daylightSavingEnd, name: "Vintertid starter", type: "observance" },
-    { date: new Date(year, 11, 21), name: "Vintersolhverv", type: "observance" },
+    {
+      date: new Date(year, 11, 21),
+      name: "Vintersolhverv",
+      type: "observance",
+    },
   ];
 
   // Sortér datoerne kronologisk
   return holidays.sort((a, b) => a.date.getTime() - b.date.getTime());
-} 
+}

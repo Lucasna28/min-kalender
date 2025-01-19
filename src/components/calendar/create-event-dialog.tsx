@@ -6,7 +6,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format, addMinutes } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
-import { EventCategory } from "@/hooks/use-events";
 import {
   Dialog,
   DialogContent,
@@ -22,11 +21,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -36,22 +33,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useSupabase } from "@/components/providers/supabase-provider";
-import { Command as CommandPrimitive } from "cmdk";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Check, ChevronsUpDown, Plus, X } from "lucide-react";
+import { Check, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -211,7 +199,6 @@ export function CreateEventDialog({
   >([]);
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [openUserCombobox, setOpenUserCombobox] = useState(false);
   const [userSearchValue, setUserSearchValue] = useState("");
   const [calendarPermissions, setCalendarPermissions] = useState<
     Record<string, string>

@@ -2,12 +2,6 @@ import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Definér ruter der kræver authentication
-const PROTECTED_ROUTES = ["/calendar"];
-
-// Definér auth-relaterede ruter
-const AUTH_ROUTES = ["/login", "/signup", "/reset-password"];
-
 export async function middleware(req: NextRequest) {
   try {
     const res = NextResponse.next();

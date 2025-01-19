@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   format,
   startOfMonth,
@@ -9,9 +9,6 @@ import {
   isSameMonth,
   isToday,
   isSameDay,
-  startOfDay,
-  endOfDay,
-  isWithinInterval,
   subDays,
   addDays,
   getDay,

@@ -10,16 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Bell,
-  Calendar,
-  Mail,
-  MessageSquare,
-  Check,
-  X,
-  Share2,
-  Clock,
-} from "lucide-react";
+import { Bell, Calendar, Mail, Check, X, Share2, Clock } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";

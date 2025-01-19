@@ -2,10 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useSupabase } from "@/components/providers/supabase-provider";
-import { endOfMonth, format, startOfMonth } from "date-fns";
-import { toast } from "@/components/ui/use-toast";
-import { useToast } from "@/components/ui/use-toast";
-import type { Database } from "@/lib/database.types";
+import { format } from "date-fns";
 
 export type Event = {
   id: string;

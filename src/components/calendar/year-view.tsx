@@ -13,13 +13,11 @@ import {
   isToday,
   isSameDay,
   getDay,
-  subDays,
 } from "date-fns";
 import { da } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent } from "@/hooks/use-events";
 import { ViewEventDialog } from "./view-event-dialog";
-import { EventItem } from "./event-item";
 import { motion, AnimatePresence } from "framer-motion";
 import { getDanishHolidays } from "@/lib/danish-holidays";
 
@@ -39,12 +37,7 @@ interface EventTypeIndicator {
   count: number;
 }
 
-export function YearView({
-  date,
-  events,
-  isLoading,
-  onDateChange,
-}: YearViewProps) {
+export function YearView({ date, events, onDateChange }: YearViewProps) {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
     null
   );

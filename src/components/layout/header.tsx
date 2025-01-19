@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
-import { Calendar, Moon, Sun, Bell, Plus, Menu, User } from "lucide-react";
+import { Moon, Sun, Plus, Menu, User } from "lucide-react";
 import { format } from "date-fns";
 import { da } from "date-fns/locale";
 import {

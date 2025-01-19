@@ -1,18 +1,17 @@
 "use client";
 
-import { useState, useEffect, useRef, forwardRef } from "react";
+import { useState, useEffect, forwardRef } from "react";
 import { MonthView } from "./month-view";
 import { WeekView } from "./week-view";
 import { DayView } from "./day-view";
 import { YearView } from "./year-view";
 import { useEvents } from "@/hooks/use-events";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, ChevronLeft, ChevronRight, Menu } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CreateEventDialog } from "./create-event-dialog";
 import { format } from "date-fns";
 import { da } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
 import { useHotkeys } from "react-hotkeys-hook";
 import { toast } from "sonner";
 import { VIEW_OPTIONS } from "@/lib/constants";
@@ -41,7 +40,6 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
       onDateChange,
       onViewChange,
       visibleCalendarIds,
-      onSidebarOpenChange,
       isCreateEventOpen = false,
       onCreateEventOpenChange,
       showHolidays,

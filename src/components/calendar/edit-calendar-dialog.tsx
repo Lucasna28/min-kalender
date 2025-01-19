@@ -6,7 +6,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -25,27 +24,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   Palette,
   Share2,
   Trash2,
-  Save,
   X,
   Check,
   Loader2,
   AlertTriangle,
   UserPlus,
-  AlertCircle,
 } from "lucide-react";
 import {
   Select,
@@ -138,7 +127,6 @@ export function EditCalendarDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [sharedUsers, setSharedUsers] = useState<SharedUser[]>([]);
-  const [selectedTab, setSelectedTab] = useState("general");
   const { supabase } = useSupabase();
   const [showRemoveShareDialog, setShowRemoveShareDialog] = useState<
     string | null

@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
 import {
   format,
@@ -13,19 +12,11 @@ import {
   isSameDay,
 } from "date-fns";
 import { da } from "date-fns/locale";
-import { cn } from "@/lib/utils";
 import type { CalendarEvent } from "@/hooks/use-events";
 import { ViewEventDialog } from "./view-event-dialog";
 import { EventItem } from "./event-item";
 import { motion, AnimatePresence } from "framer-motion";
-import { getDanishHolidays, DanishHoliday } from "@/lib/danish-holidays";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { getDanishHolidays } from "@/lib/danish-holidays";
 
 interface DayViewProps {
   date: Date;
@@ -41,7 +32,6 @@ interface DayViewProps {
 export function DayView({
   date,
   events,
-  isLoading,
   onDateChange,
   showHolidays,
 }: DayViewProps) {

@@ -11,12 +11,7 @@ interface SpecialDayProps {
   onClick?: (e: React.MouseEvent) => void;
 }
 
-export function StarWarsDay({
-  event,
-  className,
-  style,
-  onClick,
-}: SpecialDayProps) {
+export function StarWarsDay({ className, style, onClick }: SpecialDayProps) {
   return (
     <motion.div
       className={cn("relative overflow-hidden", className)}

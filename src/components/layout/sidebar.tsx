@@ -9,12 +9,10 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Menu,
   Sun,
   Briefcase,
   Users,
   User,
-  Plane,
   Book,
   Heart,
   Palette,
@@ -22,10 +20,6 @@ import {
   Grid,
   CalendarDays,
   CalendarRange,
-  HelpCircle,
-  Mail,
-  Bell,
-  Sparkles,
 } from "lucide-react";
 import { CreateCalendarDialog } from "@/components/calendar/create-calendar-dialog";
 import { useSupabase } from "@/components/providers/supabase-provider";
@@ -42,21 +36,9 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarSection,
-  SidebarTrigger,
-  SidebarItem,
-  SidebarItemIcon,
-  SidebarItemContent,
-  SidebarItemAction,
   SidebarOverlay,
 } from "@/components/ui/sidebar";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Select,

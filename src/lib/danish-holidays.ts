@@ -26,12 +26,6 @@ function getEasterSunday(year: number): Date {
   return new Date(year, month - 1, day);
 }
 
-// Funktion til at beregne fastelavn (7 uger før påske)
-function getFastelavn(year: number): Date {
-  const easter = getEasterSunday(year);
-  return addDays(easter, -49);
-}
-
 // Funktion til at finde første søndag i advent (4. søndag før jul)
 function getFirstAdventSunday(year: number): Date {
   const christmas = new Date(year, 11, 24); // 24. december

@@ -56,10 +56,10 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: ({ ...props }) => (
+        IconLeft: ({}) => (
           <ChevronLeft className="h-5 w-5" aria-label="Forrige måned" />
         ),
-        IconRight: ({ ...props }) => (
+        IconRight: ({}) => (
           <ChevronRight className="h-5 w-5" aria-label="Næste måned" />
         ),
       }}

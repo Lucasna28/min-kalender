@@ -10,7 +10,7 @@ interface ScheduleViewProps {
   events: CalendarEvent[];
 }
 
-export function ScheduleView({ date, events }: ScheduleViewProps) {
+export function ScheduleView({ events }: ScheduleViewProps) {
   // Sorter begivenheder efter startdato
   const sortedEvents = [...events].sort((a, b) => {
     const aDate = new Date(a.start_date);

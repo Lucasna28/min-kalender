@@ -22,7 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Mail, Lock, Shield, Bell } from "lucide-react";
+import { User, Lock, Shield, Bell } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
 interface ProfileSettingsDialogProps {
@@ -36,7 +36,6 @@ export function ProfileSettingsDialog({
   onOpenChange,
   userEmail,
 }: ProfileSettingsDialogProps) {
-  const { supabase } = useSupabase();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profil");

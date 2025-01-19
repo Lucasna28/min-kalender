@@ -1,13 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   format,
   startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
-  setHours,
-  setMinutes,
   isToday,
   startOfDay,
   endOfDay,
@@ -17,7 +13,6 @@ import {
   addDays,
 } from "date-fns";
 import { da } from "date-fns/locale";
-import { cn } from "@/lib/utils";
 import type { CalendarEvent } from "@/hooks/use-events";
 import { ViewEventDialog } from "./view-event-dialog";
 import { EventItem } from "./event-item";
@@ -45,12 +40,7 @@ const getWeekNumber = (date: Date) => {
   return 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000);
 };
 
-export function WeekView({
-  date,
-  events,
-  isLoading,
-  onDateChange,
-}: WeekViewProps) {
+export function WeekView({ date, events, onDateChange }: WeekViewProps) {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
     null
   );

@@ -6,8 +6,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { da } from "date-fns/locale";
@@ -20,8 +18,6 @@ import {
   Edit,
   Trash2,
   AlertTriangle,
-  X,
-  Tag,
 } from "lucide-react";
 import { useSupabase } from "@/components/providers/supabase-provider";
 import { useState, useEffect } from "react";

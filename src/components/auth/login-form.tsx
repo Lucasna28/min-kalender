@@ -1,9 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/router";
-import { useSupabase } from "@/components/providers/supabase-provider";
-import { useToast } from "@/components/ui/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
