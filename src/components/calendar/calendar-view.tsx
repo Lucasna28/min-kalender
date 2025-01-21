@@ -95,70 +95,6 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
       }
     };
 
-    const ViewComponent = {
-      day: DayView,
-      week: WeekView,
-      month: MonthView,
-      year: YearView,
-    }[view];
-
-    const handlePrevious = () => {
-      const newDate = new Date(selectedDate);
-      switch (view) {
-        case "day":
-          newDate.setDate(newDate.getDate() - 1);
-          break;
-        case "week":
-          newDate.setDate(newDate.getDate() - 7);
-          break;
-        case "month":
-          newDate.setMonth(newDate.getMonth() - 1);
-          break;
-        case "year":
-          newDate.setFullYear(newDate.getFullYear() - 1);
-          break;
-      }
-      onDateChange(newDate);
-    };
-
-    const handleNext = () => {
-      const newDate = new Date(selectedDate);
-      switch (view) {
-        case "day":
-          newDate.setDate(newDate.getDate() + 1);
-          break;
-        case "week":
-          newDate.setDate(newDate.getDate() + 7);
-          break;
-        case "month":
-          newDate.setMonth(newDate.getMonth() + 1);
-          break;
-        case "year":
-          newDate.setFullYear(newDate.getFullYear() + 1);
-          break;
-      }
-      onDateChange(newDate);
-    };
-
-    const getDateDisplay = () => {
-      switch (view) {
-        case "day":
-          return format(selectedDate, "d. MMMM yyyy", { locale: da });
-        case "week":
-          return `Uge ${format(selectedDate, "w")} · ${format(
-            selectedDate,
-            "MMMM yyyy",
-            {
-              locale: da,
-            }
-          )}`;
-        case "month":
-          return format(selectedDate, "MMMM yyyy", { locale: da });
-        case "year":
-          return format(selectedDate, "yyyy");
-      }
-    };
-
     const goToToday = () => {
       onDateChange(new Date());
     };
@@ -248,173 +184,87 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
       toast.success("Opret ny begivenhed");
     });
 
+    // Render den aktuelle view komponent
+    const CurrentView =
+      view === "day"
+        ? DayView
+        : view === "week"
+        ? WeekView
+        : view === "month"
+        ? MonthView
+        : YearView;
+
     return (
-      <div className="flex-1 flex flex-col h-full calendar-content">
-        {/* Navigation - skjules ved print */}
-        <div className="navigation flex items-center justify-between gap-2 p-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          {/* Desktop navigation */}
-          <div className="hidden sm:flex items-center gap-4">
+      <div ref={ref} className="flex flex-col h-full">
+        <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
+              size="icon"
+              onClick={goToPreviousDate}
+              className="print:hidden"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={goToNextDate}
+              className="print:hidden"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <h2 className="text-lg font-semibold">{formatDateRange()}</h2>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
               onClick={goToToday}
-              className="h-9 px-4 hover:bg-secondary/80 transition-all active:scale-95"
-              title="Gå til i dag (T)"
+              className="print:hidden"
             >
               I dag
             </Button>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={goToPreviousDate}
-                className="h-9 w-9 hover:bg-secondary/80 transition-all active:scale-95"
-                title="Forrige (←)"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-              <div className="min-w-[150px] text-center font-medium">
-                {formatDateRange()}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={goToNextDate}
-                className="h-9 w-9 hover:bg-secondary/80 transition-all active:scale-95"
-                title="Næste (→)"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </Button>
+            <div className="flex items-center rounded-md border p-1 print:hidden">
+              {VIEW_OPTIONS.map((option) => (
+                <Button
+                  key={option.value}
+                  variant={view === option.value ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => onViewChange(option.value as CalendarViewType)}
+                  className={cn(
+                    "text-sm",
+                    view === option.value && "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {option.label}
+                </Button>
+              ))}
             </div>
-          </div>
-
-          {/* Mobil navigation */}
-          <div className="sm:hidden flex items-center gap-2 flex-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={goToPreviousDate}
-              className="h-9 w-9 bg-secondary/40 hover:bg-secondary rounded-xl"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <div className="flex-1 text-center font-medium">
-              {formatDateRange()}
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={goToNextDate}
-              className="h-9 w-9 bg-secondary/40 hover:bg-secondary rounded-xl"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          </div>
-
-          {/* Visningsvalg */}
-          <div className="flex justify-center sm:justify-end">
-            {Object.entries(VIEW_OPTIONS).map(([key, label]) => (
-              <Button
-                key={key}
-                variant="ghost"
-                size="sm"
-                onClick={() => onViewChange(key as CalendarViewType)}
-                className={cn(
-                  "h-9 px-3 text-sm transition-colors",
-                  "sm:rounded-lg sm:hover:bg-secondary/80",
-                  "rounded-none border-b-2 sm:border-none",
-                  view === key
-                    ? "border-primary text-primary font-medium sm:bg-secondary"
-                    : "border-transparent"
-                )}
-              >
-                {label}
-              </Button>
-            ))}
           </div>
         </div>
 
-        {/* Print-optimeret kalenderindhold */}
-        <div
-          ref={ref}
-          className="flex-1 overflow-auto relative calendar-grid print:p-4"
-        >
-          {/* Kalender header - kun vist ved print */}
-          <div className="hidden print:block mb-4 text-center">
-            <h1 className="text-2xl font-bold">
-              {format(selectedDate, "MMMM yyyy", { locale: da })}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {view === "day" &&
-                format(selectedDate, "EEEE d.", { locale: da })}
-              {view === "week" &&
-                `Uge ${format(selectedDate, "w", { locale: da })}`}
-            </p>
-          </div>
-
-          {/* Kalenderindhold */}
-          <div className="min-w-full h-full">
-            {view === "month" && (
-              <div className="h-full">
-                <MonthView
-                  date={selectedDate}
-                  events={events}
-                  isLoading={isLoading}
-                  onDateChange={handleDateChange}
-                  showHolidays={showHolidays}
-                />
-              </div>
-            )}
-            {view === "week" && (
-              <div className="h-full">
-                <WeekView
-                  date={selectedDate}
-                  events={events}
-                  isLoading={isLoading}
-                  onDateChange={handleDateChange}
-                  showHolidays={showHolidays}
-                />
-              </div>
-            )}
-            {view === "day" && (
-              <div className="h-full">
-                <DayView
-                  date={selectedDate}
-                  events={events}
-                  isLoading={isLoading}
-                  onDateChange={handleDateChange}
-                  showHolidays={showHolidays}
-                />
-              </div>
-            )}
-            {view === "year" && (
-              <YearView
-                date={selectedDate}
-                events={events}
-                isLoading={isLoading}
-                onDateChange={handleDateChange}
-                showHolidays={showHolidays}
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Loading overlay og dialog - skjules ved print */}
-        <div className="no-print">
-          {isLoading && (
-            <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-            </div>
-          )}
-          <CreateEventDialog
-            isOpen={
-              onCreateEventOpenChange ? isCreateEventOpen : _isCreateEventOpen
-            }
-            onOpenChange={onCreateEventOpenChange ?? setIsCreateEventOpen}
-            defaultDate={selectedEventDate}
-            visibleCalendarIds={visibleCalendarIds}
-            createEvent={createEvent}
+        <div className="flex-1 overflow-auto">
+          <CurrentView
+            date={selectedDate}
+            events={events}
+            isLoading={isLoading}
+            onDateChange={handleDateChange}
+            showHolidays={showHolidays}
           />
         </div>
+
+        <CreateEventDialog
+          isOpen={isCreateEventOpen || _isCreateEventOpen}
+          onOpenChange={(open) => {
+            setIsCreateEventOpen(open);
+            onCreateEventOpenChange?.(open);
+          }}
+          defaultDate={selectedEventDate}
+          visibleCalendarIds={visibleCalendarIds}
+          createEvent={createEvent}
+        />
       </div>
     );
   }

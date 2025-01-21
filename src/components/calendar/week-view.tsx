@@ -9,7 +9,6 @@ import {
   endOfDay,
   isWithinInterval,
   isSameDay,
-  addMinutes,
   addDays,
 } from "date-fns";
 import { da } from "date-fns/locale";
@@ -143,31 +142,6 @@ export function WeekView({ date, events, onDateChange }: WeekViewProps) {
       );
 
     return [...holidays, ...regularEvents];
-  };
-
-  const getEventsForDayAndHour = (day: Date, hour: number) => {
-    return events.filter((event) => {
-      if (event.is_all_day) return false;
-
-      // Konverter tidspunkter til minutter siden midnat
-      const [startHour, startMinute] = (event.start_time || "00:00")
-        .split(":")
-        .map(Number);
-      const [endHour, endMinute] = (event.end_time || "23:59")
-        .split(":")
-        .map(Number);
-      const eventStartMinutes = startHour * 60 + startMinute;
-      const eventEndMinutes = endHour * 60 + endMinute;
-      const hourStartMinutes = hour * 60;
-      const hourEndMinutes = (hour + 1) * 60;
-
-      // Check om begivenheden er inden for denne time
-      return (
-        isSameDay(day, new Date(event.start_date)) &&
-        eventStartMinutes < hourEndMinutes &&
-        eventEndMinutes > hourStartMinutes
-      );
-    });
   };
 
   return (

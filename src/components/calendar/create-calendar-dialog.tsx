@@ -93,20 +93,20 @@ export function CreateCalendarDialog({
   isOpen,
   onOpenChange,
 }: CreateCalendarDialogProps) {
-  const { supabase } = useSupabase();
   const { toast } = useToast();
-  const [isCreating, setIsCreating] = useState(false);
+  const { supabase } = useSupabase();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState<string>("personal");
-  const [color, setColor] = useState<string>(CALENDAR_TYPES[0].color);
-  const [inviteEmail, setInviteEmail] = useState("");
+  const [color, setColor] = useState(CALENDAR_TYPES[0].color);
+  const [showInSearch, setShowInSearch] = useState(false);
+  const [allowInvites, setAllowInvites] = useState(true);
   const [invitations, setInvitations] = useState<
     Array<{ email: string; permission: string }>
   >([]);
-  const [isPublic, setIsPublic] = useState(false);
-  const [showInSearch, setShowInSearch] = useState(false);
-  const [allowInvites, setAllowInvites] = useState(true);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [selectedPermission, setSelectedPermission] = useState<string>("view");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleTypeChange = (newType: string) => {
     setType(newType);
@@ -116,25 +116,15 @@ export function CreateCalendarDialog({
     }
   };
 
-  const handleAddInvitation = () => {
-    if (!inviteEmail.trim()) return;
-
-    // Validér email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(inviteEmail)) {
-      toast({
-        title: "Ugyldig email",
-        description: "Indtast venligst en gyldig email adresse",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleInvite = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail) return;
 
     // Tjek om emailen allerede er inviteret
     if (invitations.some((inv) => inv.email === inviteEmail)) {
       toast({
         title: "Allerede inviteret",
-        description: "Denne bruger er allerede inviteret",
+        description: "Denne email er allerede inviteret",
         variant: "destructive",
       });
       return;
@@ -142,7 +132,7 @@ export function CreateCalendarDialog({
 
     setInvitations([
       ...invitations,
-      { email: inviteEmail, permission: "view" },
+      { email: inviteEmail, permission: selectedPermission },
     ]);
     setInviteEmail("");
   };
@@ -174,76 +164,82 @@ export function CreateCalendarDialog({
   const handleCreate = async () => {
     if (!validateForm()) return;
 
-    setIsCreating(true);
+    setIsLoading(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Ingen bruger fundet");
-
-      // Opret kalender
-      const { data: calendar, error: calendarError } = await supabase
+      const { data: calendar, error: createError } = await supabase
         .from("calendars")
         .insert([
           {
-            name: name.trim(),
-            description: description.trim(),
+            name,
+            description,
             color,
             type,
             is_visible: true,
-            is_public: isPublic,
+            is_public: false,
             show_in_search: showInSearch,
             allow_invites: allowInvites,
-            user_id: user.id,
           },
         ])
         .select()
         .single();
 
-      if (calendarError) throw calendarError;
+      if (createError) {
+        console.error("Fejl ved oprettelse af kalender:", createError);
+        toast({
+          title: "Fejl ved oprettelse",
+          description: "Der skete en fejl ved oprettelse af kalenderen",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      // Opret delinger hvis der er invitationer
-      if (invitations.length > 0) {
-        const { error: sharingError } = await supabase
-          .from("calendar_shares")
-          .insert(
-            invitations.map((inv) => ({
-              calendar_id: calendar.id,
+      // Opret invitationer
+      if (invitations.length > 0 && calendar) {
+        const { error: shareError } = await supabase.rpc(
+          "share_calendar_with_users",
+          {
+            calendar_id: calendar.id,
+            user_emails: invitations.map((inv) => ({
               email: inv.email,
               permission: inv.permission,
-              status: "pending",
-            }))
-          );
+            })),
+          }
+        );
 
-        if (sharingError) throw sharingError;
+        if (shareError) {
+          console.error("Fejl ved deling af kalender:", shareError);
+          toast({
+            title: "Fejl ved deling",
+            description:
+              "Kalenderen blev oprettet, men der skete en fejl ved deling",
+            variant: "destructive",
+          });
+        }
       }
 
       toast({
         title: "Kalender oprettet",
-        description: `Kalenderen "${name}" er blevet oprettet${
-          invitations.length > 0 ? " og invitationer er sendt" : ""
-        }`,
+        description: "Din nye kalender er blevet oprettet",
       });
 
-      // Nulstil form og luk dialog
+      // Nulstil form
       setName("");
       setDescription("");
       setType("personal");
       setColor(CALENDAR_TYPES[0].color);
       setInvitations([]);
-      setIsPublic(false);
       setShowInSearch(false);
       setAllowInvites(true);
       onOpenChange(false);
     } catch (error) {
-      console.error("Fejl ved oprettelse af kalender:", error);
+      console.error("Uventet fejl:", error);
       toast({
-        title: "Fejl",
-        description: "Der skete en fejl ved oprettelse af kalenderen",
+        title: "Uventet fejl",
+        description: "Der skete en uventet fejl",
         variant: "destructive",
       });
     } finally {
-      setIsCreating(false);
+      setIsLoading(false);
     }
   };
 
@@ -365,28 +361,6 @@ export function CreateCalendarDialog({
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
-                      <Label>Offentlig kalender</Label>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Info className="h-4 w-4 text-muted-foreground" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Alle kan se denne kalender</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Gør kalenderen synlig for alle
-                    </p>
-                  </div>
-                  <Switch checked={isPublic} onCheckedChange={setIsPublic} />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
                       <Label>Vis i søgning</Label>
                       <TooltipProvider>
                         <Tooltip>
@@ -455,15 +429,13 @@ export function CreateCalendarDialog({
                       placeholder="Indtast email"
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" && handleAddInvitation()
-                      }
+                      onKeyDown={(e) => e.key === "Enter" && handleInvite(e)}
                       className="h-11"
                     />
                     <Button
                       type="button"
                       variant="secondary"
-                      onClick={handleAddInvitation}
+                      onClick={handleInvite}
                       className="h-11"
                     >
                       Tilføj
@@ -536,8 +508,8 @@ export function CreateCalendarDialog({
           >
             Annuller
           </Button>
-          <Button onClick={handleCreate} disabled={isCreating} className="h-11">
-            {isCreating ? "Opretter..." : "Opret kalender"}
+          <Button onClick={handleCreate} disabled={isLoading} className="h-11">
+            {isLoading ? "Opretter..." : "Opret kalender"}
           </Button>
         </DialogFooter>
       </DialogContent>

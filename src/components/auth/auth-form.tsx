@@ -6,6 +6,11 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { LoginForm } from "./login-form";
 
+interface AuthError {
+  message: string;
+  status?: number;
+}
+
 interface AuthFormProps {
   view?: "sign-in" | "sign-up" | "forgotten-password" | "update-password";
 }
@@ -33,10 +38,12 @@ export function AuthForm({ view = "sign-in" }: AuthFormProps) {
         title: "Tjek din email",
         description: "Vi har sendt dig et magisk link til at logge ind med.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const authError = error as AuthError;
       toast({
         title: "Fejl",
-        description: error?.message || "Der skete en fejl. Prøv igen senere.",
+        description:
+          authError?.message || "Der skete en fejl. Prøv igen senere.",
         variant: "destructive",
       });
     } finally {

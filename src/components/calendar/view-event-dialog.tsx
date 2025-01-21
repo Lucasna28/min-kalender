@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface ViewEventDialogProps {
   event: CalendarEvent;
@@ -76,7 +77,7 @@ export function ViewEventDialog({
   onOpenChange,
 }: ViewEventDialogProps) {
   const { supabase } = useSupabase();
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 

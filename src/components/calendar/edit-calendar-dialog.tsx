@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -139,15 +139,7 @@ export function EditCalendarDialog({
     string | null
   >(null);
 
-  // Hent ejer information når dialogen åbnes
-  useEffect(() => {
-    if (isOpen) {
-      fetchOwner();
-      fetchSharedUsers();
-    }
-  }, [isOpen]);
-
-  const fetchOwner = async () => {
+  const fetchOwner = useCallback(async () => {
     try {
       const { data, error } = await supabase.rpc("get_user_by_id", {
         user_id: calendar.user_id,
@@ -167,20 +159,12 @@ export function EditCalendarDialog({
     } catch (error) {
       console.error("Uventet fejl:", error);
     }
-  };
+  }, [calendar.user_id, supabase]);
 
-  // Hent delte brugere når dialogen åbnes
-  useEffect(() => {
-    if (isOpen) {
-      fetchSharedUsers();
-    }
-  }, [isOpen]);
-
-  const fetchSharedUsers = async () => {
+  const fetchSharedUsers = useCallback(async () => {
     try {
       console.log("Henter invitationer for kalender:", calendar.id);
 
-      // Hent delte brugere fra calendar_shares
       const { data: shares, error: sharesError } = await supabase
         .from("calendar_shares")
         .select(
@@ -192,8 +176,6 @@ export function EditCalendarDialog({
         `
         )
         .eq("calendar_id", calendar.id);
-
-      console.log("Svar fra Supabase:", { shares, sharesError });
 
       if (sharesError) {
         console.error("Fejl ved hentning af invitationer:", sharesError);
@@ -208,34 +190,70 @@ export function EditCalendarDialog({
           status: share.status || "pending",
           permission: share.permission || "viewer",
         }));
-        console.log("Behandlede brugere:", users);
         setSharedUsers(users);
       }
     } catch (error) {
       console.error("Uventet fejl:", error);
       toast.error("Der skete en uventet fejl");
     }
-  };
+  }, [calendar.id, supabase]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const checkCurrentUserPermission = useCallback(async () => {
+    try {
+      const session = await supabase.auth.getSession();
+      if (!session.data.session) return;
 
-    const { error } = await supabase
-      .from("calendars")
-      .update({ name, color, type })
-      .eq("id", calendar.id);
+      const currentUser = session.data.session.user;
 
-    if (error) {
-      toast.error("Der skete en fejl ved opdatering af kalenderen");
-      setIsLoading(false);
-      return;
+      // Hvis brugeren er ejer
+      if (calendar.user_id === currentUser.id) {
+        setCurrentUserPermission("owner");
+        return;
+      }
+
+      // Ellers tjek delte tilladelser
+      const { data: share, error } = await supabase
+        .from("calendar_shares")
+        .select("permission")
+        .eq("calendar_id", calendar.id)
+        .eq("email", currentUser.email)
+        .eq("status", "accepted")
+        .single();
+
+      if (error) {
+        console.error("Fejl ved tjek af tilladelser:", error);
+        return;
+      }
+
+      if (share) {
+        setCurrentUserPermission(share.permission);
+      }
+    } catch (error) {
+      console.error("Uventet fejl:", error);
     }
+  }, [calendar.id, calendar.user_id, supabase]);
 
-    toast.success("Kalenderen blev opdateret");
-    onCalendarUpdated();
-    setIsLoading(false);
-  };
+  // Hent ejer information når dialogen åbnes
+  useEffect(() => {
+    if (isOpen) {
+      fetchOwner();
+      fetchSharedUsers();
+    }
+  }, [isOpen, fetchOwner, fetchSharedUsers]);
+
+  // Hent delte brugere når dialogen åbnes
+  useEffect(() => {
+    if (isOpen) {
+      fetchSharedUsers();
+    }
+  }, [isOpen, fetchSharedUsers]);
+
+  // Tjek brugerens tilladelser når dialogen åbnes
+  useEffect(() => {
+    if (isOpen) {
+      checkCurrentUserPermission();
+    }
+  }, [isOpen, checkCurrentUserPermission]);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -380,48 +398,6 @@ export function EditCalendarDialog({
     }
   };
 
-  // Tjek brugerens tilladelser når dialogen åbnes
-  useEffect(() => {
-    if (isOpen) {
-      checkCurrentUserPermission();
-    }
-  }, [isOpen]);
-
-  const checkCurrentUserPermission = async () => {
-    try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) return;
-
-      const currentUser = session.data.session.user;
-
-      // Hvis brugeren er ejer
-      if (calendar.user_id === currentUser.id) {
-        setCurrentUserPermission("owner");
-        return;
-      }
-
-      // Ellers tjek delte tilladelser
-      const { data: share, error } = await supabase
-        .from("calendar_shares")
-        .select("permission")
-        .eq("calendar_id", calendar.id)
-        .eq("email", currentUser.email)
-        .eq("status", "accepted")
-        .single();
-
-      if (error) {
-        console.error("Fejl ved tjek af tilladelser:", error);
-        return;
-      }
-
-      if (share) {
-        setCurrentUserPermission(share.permission);
-      }
-    } catch (error) {
-      console.error("Uventet fejl:", error);
-    }
-  };
-
   const canManageSharing =
     currentUserPermission === "owner" || currentUserPermission === "admin";
   const canEditCalendar =
@@ -556,11 +532,15 @@ export function EditCalendarDialog({
                       </SelectTrigger>
                       <SelectContent>
                         {Object.entries(CALENDAR_TYPES).map(
-                          ([key, { name, icon }]) => (
+                          ([key, { icon }]) => (
                             <SelectItem key={key} value={key} className="h-8">
                               <div className="flex items-center gap-2 text-sm">
                                 {icon}
-                                {name}
+                                {
+                                  CALENDAR_TYPES[
+                                    key as keyof typeof CALENDAR_TYPES
+                                  ].name
+                                }
                               </div>
                             </SelectItem>
                           )

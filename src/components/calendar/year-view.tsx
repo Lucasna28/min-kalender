@@ -52,29 +52,6 @@ export function YearView({ date, events, onDateChange }: YearViewProps) {
   // Få danske helligdage for året
   const holidays = getDanishHolidays(date.getFullYear());
 
-  // Funktion til at få events for en specifik dag
-  const getEventsForDay = (day: Date) => {
-    const dayEvents = events.filter((event) => {
-      const eventStart = new Date(event.start_date);
-      const eventEnd = new Date(event.end_date);
-      return isSameDay(day, eventStart) || isSameDay(day, eventEnd);
-    });
-
-    const dayHolidays = holidays
-      .filter((holiday) => isSameDay(holiday.date, day))
-      .map((holiday) => ({
-        id: `holiday-${holiday.date.getTime()}`,
-        title: holiday.title,
-        start_date: holiday.date,
-        end_date: holiday.date,
-        is_all_day: true,
-        color: holiday.color,
-        calendar_id: "danish-holidays",
-      })) as CalendarEvent[];
-
-    return [...dayHolidays, ...dayEvents];
-  };
-
   // Funktion til at få events grupperet efter type for en specifik dag
   const getEventsByType = (day: Date) => {
     const dayEvents = events.filter((event) => {
@@ -219,7 +196,7 @@ export function YearView({ date, events, onDateChange }: YearViewProps) {
                     {format(day, "d.")}
                     {hasEvents && (
                       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-[2px]">
-                        {eventTypes.map((eventType, index) => (
+                        {eventTypes.map((eventType) => (
                           <div
                             key={eventType.type}
                             className="w-1 h-1 rounded-full"
