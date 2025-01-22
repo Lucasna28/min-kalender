@@ -227,18 +227,18 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
               I dag
             </Button>
             <div className="flex items-center rounded-md border p-1 print:hidden">
-              {VIEW_OPTIONS.map((option) => (
+              {Object.entries(VIEW_OPTIONS).map(([value, label]) => (
                 <Button
-                  key={option.value}
-                  variant={view === option.value ? "secondary" : "ghost"}
+                  key={value}
+                  variant={view === value ? "secondary" : "ghost"}
                   size="sm"
-                  onClick={() => onViewChange(option.value as CalendarViewType)}
+                  onClick={() => onViewChange(value as CalendarViewType)}
                   className={cn(
                     "text-sm",
-                    view === option.value && "bg-muted text-muted-foreground"
+                    view === value && "bg-muted text-muted-foreground"
                   )}
                 >
-                  {option.label}
+                  {label}
                 </Button>
               ))}
             </div>
