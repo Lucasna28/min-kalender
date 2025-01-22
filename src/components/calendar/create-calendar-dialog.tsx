@@ -105,7 +105,7 @@ export function CreateCalendarDialog({
     Array<{ email: string; permission: string }>
   >([]);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [selectedPermission, setSelectedPermission] = useState<string>("view");
+  const selectedPermission = "view";
   const [isLoading, setIsLoading] = useState(false);
 
   const handleTypeChange = (newType: string) => {

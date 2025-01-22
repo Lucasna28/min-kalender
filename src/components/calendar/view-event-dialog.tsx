@@ -18,6 +18,7 @@ import {
   Edit,
   Trash2,
   AlertTriangle,
+  ExternalLink,
 } from "lucide-react";
 import { useSupabase } from "@/components/providers/supabase-provider";
 import { useState, useEffect } from "react";
@@ -265,32 +266,21 @@ export function ViewEventDialog({
                   )}
 
                   {event.location && (
-                    <div className="flex items-center gap-4 group">
-                      <div
-                        className={cn(
-                          "bg-primary/10 p-2.5 rounded-xl shrink-0",
-                          "transition-all duration-300 group-hover:scale-110 group-hover:rotate-[8deg] group-hover:bg-primary/20"
-                        )}
-                      >
-                        <MapPin className="w-5 h-5 text-primary" />
-                      </div>
-                      <div className="space-y-1 min-w-0">
-                        <p className="font-medium break-words">
-                          {event.location}
-                        </p>
-                        <button
-                          onClick={() =>
-                            window.open(
-                              `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                                event.location || ""
-                              )}`,
-                              "_blank"
-                            )
-                          }
-                          className="text-sm text-primary hover:underline"
+                    <div className="flex items-start gap-2">
+                      <MapPin className="h-4 w-4 mt-1 shrink-0" />
+                      <div className="space-y-1">
+                        <p className="text-sm">{event.location}</p>
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                            event.location
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
                         >
-                          Åbn i Google Maps
-                        </button>
+                          <span>Åbn i Google Maps</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
                       </div>
                     </div>
                   )}

@@ -21,6 +21,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -71,35 +72,39 @@ const REPEAT_OPTIONS = [
   { id: "YEARLY", name: "Årligt" },
 ] as const;
 
+// Tilføj kategorier med ikoner
+const CATEGORIES = [
+  { value: "arbejde", label: "Arbejde", icon: "💼" },
+  { value: "personlig", label: "Personlig", icon: "👤" },
+  { value: "familie", label: "Familie", icon: "👨‍👩‍👧‍👦" },
+  { value: "ferie", label: "Ferie", icon: "🏖️" },
+  { value: "fødselsdag", label: "Fødselsdag", icon: "🎂" },
+  { value: "møde", label: "Møde", icon: "🤝" },
+  { value: "læge", label: "Læge", icon: "👨‍⚕️" },
+  { value: "andet", label: "Andet", icon: "📌" },
+] as const;
+
 // Opdater formSchema med mere detaljeret validering
 const formSchema = z
   .object({
     title: z
       .string()
-      .min(2, "Titel skal være mindst 2 tegn")
+      .min(1, "Titel er påkrævet")
       .max(100, "Titel må max være 100 tegn"),
     description: z
       .string()
-      .max(500, "Beskrivelse må max være 500 tegn")
+      .max(1000, "Beskrivelse må max være 1000 tegn")
       .optional(),
-    start_date: z.date({
-      required_error: "Vælg en startdato",
-      invalid_type_error: "Ugyldig dato",
-    }),
-    end_date: z.date({
-      required_error: "Vælg en slutdato",
-      invalid_type_error: "Ugyldig dato",
-    }),
-    start_time: z
-      .string()
-      .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Ugyldigt tidspunkt")
-      .optional(),
-    end_time: z
-      .string()
-      .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Ugyldigt tidspunkt")
-      .optional(),
+    start_date: z.date(),
+    end_date: z.date(),
+    start_time: z.string(),
+    end_time: z.string(),
     is_all_day: z.boolean(),
-    location: z.string().max(200, "Lokation må max være 200 tegn").optional(),
+    location: z
+      .string()
+      .max(200, "Lokation må max være 200 tegn")
+      .optional()
+      .transform((val) => val?.trim()),
     calendar_id: z.string().min(1, "Vælg en kalender"),
     category: z
       .enum(
@@ -187,7 +192,7 @@ export function CreateEventDialog({
   const { toast } = useToast();
   const { supabase } = useSupabase();
   const [calendars, setCalendars] = useState<
-    Array<{ id: string; name: string; user_id: string }>
+    Array<{ id: string; name: string; user_id: string; permission: string }>
   >([]);
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -222,16 +227,72 @@ export function CreateEventDialog({
 
   // Tilføj fetchCalendars funktion
   const fetchCalendars = async () => {
-    const { data, error } = await supabase
-      .from("calendars")
-      .select("id, name, user_id");
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (error) {
-      console.error("Fejl ved hentning af kalendere:", error);
+    if (!user) {
+      console.log("Ingen bruger fundet");
       return;
     }
 
-    setCalendars(data || []);
+    // Hent brugerens egne kalendere
+    const { data: userCalendars, error: userCalendarsError } = await supabase
+      .from("calendars")
+      .select("id, name, user_id")
+      .eq("user_id", user.id);
+
+    if (userCalendarsError) {
+      console.log(
+        "Fejl ved hentning af brugerens kalendere:",
+        userCalendarsError
+      );
+      return;
+    }
+
+    // Hent delte kalendere
+    const { data: sharedCalendars, error: sharedCalendarsError } =
+      await supabase
+        .from("calendar_shares")
+        .select(
+          `
+        calendar:calendar_id (
+          id,
+          name,
+          user_id
+        ),
+        permission
+      `
+        )
+        .eq("user_id", user.id)
+        .eq("status", "accepted");
+
+    if (sharedCalendarsError) {
+      console.log(
+        "Fejl ved hentning af delte kalendere:",
+        sharedCalendarsError
+      );
+      return;
+    }
+
+    // Kombiner brugerens egne kalendere (som owner) med delte kalendere
+    const allCalendars = [
+      ...(userCalendars || []).map((cal) => ({
+        id: cal.id,
+        name: cal.name,
+        user_id: cal.user_id,
+        permission: "owner",
+      })),
+      ...(sharedCalendars || []).map((share) => ({
+        id: share.calendar.id,
+        name: share.calendar.name,
+        user_id: share.calendar.user_id,
+        permission: share.permission,
+      })),
+    ];
+
+    console.log("Alle kalendere med tilladelser:", allCalendars);
+    setCalendars(allCalendars);
   };
 
   // Opdater useEffect til at bruge fetchCalendars
@@ -257,13 +318,16 @@ export function CreateEventDialog({
 
   // Opdater form schema til kun at vise kalendere hvor brugeren har rettigheder
   const calendarsWithWriteAccess = calendars.filter((cal) => {
-    const permission = calendarPermissions[cal.id];
-    return (
-      permission === "owner" ||
-      permission === "admin" ||
-      permission === "editor"
+    const hasWriteAccess = ["owner", "admin", "editor"].includes(
+      cal.permission
     );
+    console.log(
+      `Kalender ${cal.name} har tilladelse: ${cal.permission}, hasWriteAccess: ${hasWriteAccess}`
+    );
+    return hasWriteAccess;
   });
+
+  console.log("Kalendere med skriverettigheder:", calendarsWithWriteAccess);
 
   // Søg efter brugere
   useEffect(() => {
@@ -583,6 +647,80 @@ export function CreateEventDialog({
                     />
                   </div>
                 )}
+
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">
+                        Lokation
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Indtast en adresse eller lokation"
+                          {...field}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormDescription className="text-xs text-muted-foreground">
+                        Indtast en fuld adresse for at kunne åbne den i Google
+                        Maps senere
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">
+                        Kategori
+                      </FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Vælg en kategori">
+                              {field.value && (
+                                <span className="flex items-center gap-2">
+                                  {
+                                    CATEGORIES.find(
+                                      (cat) => cat.value === field.value
+                                    )?.icon
+                                  }
+                                  {
+                                    CATEGORIES.find(
+                                      (cat) => cat.value === field.value
+                                    )?.label
+                                  }
+                                </span>
+                              )}
+                            </SelectValue>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {CATEGORIES.map((category) => (
+                            <SelectItem
+                              key={category.value}
+                              value={category.value}
+                              className="flex items-center gap-2"
+                            >
+                              <span>{category.icon}</span>
+                              <span>{category.label}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               <Accordion type="single" collapsible className="w-full">

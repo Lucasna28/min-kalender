@@ -10,6 +10,8 @@ import {
   isWithinInterval,
   isSameDay,
   addDays,
+  isAfter,
+  isBefore,
 } from "date-fns";
 import { da } from "date-fns/locale";
 import type { CalendarEvent } from "@/hooks/use-events";
@@ -105,9 +107,14 @@ export function WeekView({ date, events, onDateChange }: WeekViewProps) {
 
   const getEventsForDay = (day: Date) => {
     return events.filter((event) => {
-      if (event.is_all_day) return false;
-      const eventDate = new Date(event.start_date);
-      return isSameDay(day, eventDate);
+      const eventStart = new Date(event.start_date);
+      const eventEnd = new Date(event.end_date);
+
+      // Tjek om dagen er mellem start og slut (inklusiv)
+      return (
+        (isSameDay(eventStart, day) || isAfter(day, eventStart)) &&
+        (isSameDay(eventEnd, day) || isBefore(day, eventEnd))
+      );
     });
   };
 

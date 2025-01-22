@@ -10,6 +10,8 @@ import {
   endOfDay,
   isWithinInterval,
   isSameDay,
+  isAfter,
+  isBefore,
 } from "date-fns";
 import { da } from "date-fns/locale";
 import type { CalendarEvent } from "@/hooks/use-events";
@@ -80,8 +82,14 @@ export function DayView({
   // Få events for denne dag
   const getEventsForDay = () => {
     return events.filter((event) => {
-      const eventDate = new Date(event.start_date);
-      return isSameDay(date, eventDate);
+      const eventStart = new Date(event.start_date);
+      const eventEnd = new Date(event.end_date);
+
+      // Tjek om dagen er mellem start og slut (inklusiv)
+      return (
+        (isSameDay(eventStart, date) || isAfter(date, eventStart)) &&
+        (isSameDay(eventEnd, date) || isBefore(date, eventEnd))
+      );
     });
   };
 
