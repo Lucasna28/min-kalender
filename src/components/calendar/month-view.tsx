@@ -12,8 +12,6 @@ import {
   subDays,
   addDays,
   getDay,
-  isAfter,
-  isBefore,
 } from "date-fns";
 import { da } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -190,28 +188,36 @@ export function MonthView({
 
   // Hjælpefunktion til at hente events for en given dag
   const getEventsForDay = (day: Date): CalendarEvent[] => {
-    const regularEvents = events.filter((event) => {
-      const eventStart = new Date(event.start_date);
-      const eventEnd = new Date(event.end_date);
-
-      // Tjek om dagen er mellem start og slut (inklusiv)
-      return (
-        (isSameDay(eventStart, day) || isAfter(day, eventStart)) &&
-        (isSameDay(eventEnd, day) || isBefore(day, eventEnd))
-      );
-    });
+    const regularEvents = events.filter((event) =>
+      isSameDay(event.start_date, day)
+    );
 
     // Find danske helligdage for denne dag, men kun hvis showHolidays er true
     const holidays = showHolidays
       ? danishHolidays
           .filter((holiday) => isSameDay(holiday.date, day))
-          .map((holiday) => ({
-            ...holiday,
-            category: "helligdag",
-          }))
+          .map(
+            (holiday) =>
+              ({
+                id: `holiday-${holiday.date.getTime()}-${holiday.title
+                  .toLowerCase()
+                  .replace(/\s+/g, "-")}`,
+                title: holiday.title,
+                start_date: holiday.date,
+                end_date: holiday.date,
+                is_all_day: true,
+                color: "#dc2626", // Rød farve for helligdage
+                calendar_id: "danish-holidays",
+                user_id: "system",
+                created_at: new Date(),
+                category: "helligdag",
+                description: "Dansk helligdag",
+              } as CalendarEvent)
+          )
       : [];
 
-    return [...regularEvents, ...holidays];
+    // Vis helligdage først
+    return [...holidays, ...regularEvents];
   };
 
   // Generer dage for måneden
