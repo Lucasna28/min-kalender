@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { format, addMinutes } from "date-fns";
+import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Dialog,
@@ -174,12 +174,6 @@ interface CreateEventDialogProps {
   createEvent: (
     eventData: Database["public"]["Tables"]["events"]["Insert"]
   ) => Promise<Database["public"]["Tables"]["events"]["Row"]>;
-}
-
-interface User {
-  id: string;
-  email: string;
-  full_name?: string;
 }
 
 export function CreateEventDialog({
