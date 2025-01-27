@@ -11,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useSupabase } from "@/components/providers/supabase-provider";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -45,9 +44,6 @@ export function ProfileSettingsDialog({
     setIsLoading(true);
 
     try {
-      const formData = new FormData(e.currentTarget);
-      const displayName = formData.get("displayName") as string;
-
       // Her ville vi normalt opdatere profilen i databasen
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Simuleret delay
 
@@ -55,7 +51,7 @@ export function ProfileSettingsDialog({
         title: "Profil opdateret",
         description: "Dine ændringer er blevet gemt.",
       });
-    } catch (error) {
+    } catch (_) {
       toast({
         title: "Fejl",
         description: "Der skete en fejl ved opdatering af profilen.",
