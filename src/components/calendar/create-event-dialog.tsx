@@ -186,7 +186,6 @@ export function CreateEventDialog({
   isOpen,
   onOpenChange,
   defaultDate,
-  visibleCalendarIds,
   createEvent,
 }: CreateEventDialogProps) {
   const { toast } = useToast();
@@ -194,12 +193,7 @@ export function CreateEventDialog({
   const [calendars, setCalendars] = useState<
     Array<{ id: string; name: string; user_id: string; permission: string }>
   >([]);
-  const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [userSearchValue, _setUserSearchValue] = useState("");
-  const [calendarPermissions, setCalendarPermissions] = useState<
-    Record<string, string>
-  >({});
   const [calendarUsers, setCalendarUsers] = useState<
     { email: string; full_name?: string }[]
   >([]);
@@ -329,37 +323,6 @@ export function CreateEventDialog({
 
   console.log("Kalendere med skriverettigheder:", calendarsWithWriteAccess);
 
-  // Søg efter brugere
-  useEffect(() => {
-    const searchUsers = async () => {
-      if (!userSearchValue.trim()) return;
-
-      const { data: searchResults } = await supabase
-        .from("users")
-        .select("id, email, full_name")
-        .or(
-          `email.ilike.%${userSearchValue}%,full_name.ilike.%${userSearchValue}%`
-        )
-        .limit(5);
-
-      if (searchResults) {
-        setUsers(searchResults);
-      }
-    };
-
-    searchUsers();
-  }, [userSearchValue, supabase]);
-
-  // Opdater form værdier når defaultDate ændrer sig
-  useEffect(() => {
-    if (defaultDate) {
-      form.setValue("start_date", defaultDate);
-      form.setValue("end_date", defaultDate);
-      form.setValue("start_time", format(defaultDate, "HH:mm"));
-      form.setValue("end_time", format(addMinutes(defaultDate, 60), "HH:mm"));
-    }
-  }, [defaultDate, form.setValue]);
-
   // Hent kalenderens brugere når kalenderen vælges
   useEffect(() => {
     const fetchCalendarUsers = async () => {
@@ -423,19 +386,6 @@ export function CreateEventDialog({
       setIsLoading(false);
     }
   };
-
-  // Opret en statisk variabel for calendar_id check
-  const calendarIdToCheck = form.watch("calendar_id");
-
-  useEffect(() => {
-    const checkCalendarPermissions = async () => {
-      // ... existing code ...
-    };
-
-    if (calendarIdToCheck) {
-      checkCalendarPermissions();
-    }
-  }, [calendarIdToCheck, supabase, form]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
