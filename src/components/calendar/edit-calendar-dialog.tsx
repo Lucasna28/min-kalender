@@ -271,7 +271,7 @@ export function EditCalendarDialog({
       const currentUser = session.data.session.user;
 
       // Inviter bruger via RPC funktion med de korrekte parameternavne
-      const { data, error } = await supabase.rpc("invite_user_to_calendar", {
+      const { error } = await supabase.rpc("invite_user_to_calendar", {
         invitee_email: inviteEmail,
         inviter_id: currentUser.id,
         target_calendar_id: calendar.id,
