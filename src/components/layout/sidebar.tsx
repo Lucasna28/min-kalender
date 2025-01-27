@@ -10,12 +10,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Sun,
-  Briefcase,
-  Users,
-  User,
-  Book,
-  Heart,
-  Palette,
   LucideIcon,
   Grid,
   CalendarDays,
@@ -47,35 +41,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-// Kalender typer med emojis og ikoner
-const CALENDAR_TYPES = [
-  {
-    id: "personal",
-    name: "Personlig",
-    emoji: "👤",
-    color: "#4285f4",
-    icon: User,
-  },
-  {
-    id: "work",
-    name: "Arbejde",
-    emoji: "💼",
-    color: "#34A853",
-    icon: Briefcase,
-  },
-  { id: "family", name: "Familie", emoji: "👨‍👩‍👧‍👦", color: "#EA4335", icon: Users },
-  { id: "school", name: "Skole", emoji: "📚", color: "#FBBC05", icon: Book },
-  { id: "health", name: "Sundhed", emoji: "🏥", color: "#46BDC6", icon: Heart },
-  { id: "hobby", name: "Hobby", emoji: "🎨", color: "#9C27B0", icon: Palette },
-  {
-    id: "other",
-    name: "Andet",
-    emoji: "📅",
-    color: "#607D8B",
-    icon: CalendarIcon,
-  },
-];
 
 interface Calendar {
   id: string;
