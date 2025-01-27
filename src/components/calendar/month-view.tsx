@@ -18,7 +18,6 @@ import { cn } from "@/lib/utils";
 import type { CalendarEvent } from "@/hooks/use-events";
 import { ViewEventDialog } from "./view-event-dialog";
 import { EventItem } from "./event-item";
-import { motion, AnimatePresence } from "framer-motion";
 import { getDanishHolidays, DanishHoliday } from "@/lib/danish-holidays";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -88,11 +87,13 @@ const DayCell = memo(
     onDateClick: (date: Date) => void;
   }) => {
     const parentRef = useRef<HTMLDivElement>(null);
+    const weekday = format(day, "EEEE", { locale: da });
+    const dayNumber = getDay(day);
 
     const virtualizer = useVirtualizer({
       count: dayEvents.length,
       getScrollElement: () => parentRef.current,
-      estimateSize: () => 24, // Estimeret højde for hver event
+      estimateSize: () => 24,
       overscan: 3,
     });
 
@@ -105,6 +106,8 @@ const DayCell = memo(
           isOutsideMonth && "opacity-50"
         )}
         onClick={() => onDateClick(day)}
+        data-weekday={weekday}
+        data-day={dayNumber}
       >
         <time dateTime={format(day, "yyyy-MM-dd")}>{format(day, "d.")}</time>
 
@@ -156,7 +159,6 @@ export function MonthView({
   const [danishHolidays, setDanishHolidays] = useState<DanishHoliday[]>([]);
   const [mounted, setMounted] = useState(false);
 
-  // Marker at komponenten er mounted og hent helligdage
   useEffect(() => {
     setMounted(true);
     const year = date.getFullYear();
@@ -164,7 +166,6 @@ export function MonthView({
     setDanishHolidays(holidays);
   }, []);
 
-  // Opdater helligdage når året ændrer sig
   useEffect(() => {
     if (mounted) {
       const year = date.getFullYear();
@@ -173,7 +174,6 @@ export function MonthView({
     }
   }, [date, mounted]);
 
-  // Hvis ikke mounted, vis loading state
   if (!mounted) {
     return (
       <div className="flex flex-col h-full bg-background animate-pulse">
@@ -186,13 +186,11 @@ export function MonthView({
     );
   }
 
-  // Hjælpefunktion til at hente events for en given dag
   const getEventsForDay = (day: Date): CalendarEvent[] => {
     const regularEvents = events.filter((event) =>
       isSameDay(event.start_date, day)
     );
 
-    // Find danske helligdage for denne dag, men kun hvis showHolidays er true
     const holidays = showHolidays
       ? danishHolidays
           .filter((holiday) => isSameDay(holiday.date, day))
@@ -206,7 +204,7 @@ export function MonthView({
                 start_date: holiday.date,
                 end_date: holiday.date,
                 is_all_day: true,
-                color: "#dc2626", // Rød farve for helligdage
+                color: "#dc2626",
                 calendar_id: "danish-holidays",
                 user_id: "system",
                 created_at: new Date(),
@@ -216,20 +214,16 @@ export function MonthView({
           )
       : [];
 
-    // Vis helligdage først
     return [...holidays, ...regularEvents];
   };
 
-  // Generer dage for måneden
   const monthStart = startOfMonth(date);
   const monthEnd = endOfMonth(date);
 
-  // Find første mandag før månedens start
   const firstDayOfMonth = getDay(monthStart);
   const daysToIncludeFromPreviousMonth = (firstDayOfMonth + 6) % 7;
   const calendarStart = subDays(monthStart, daysToIncludeFromPreviousMonth);
 
-  // Find sidste søndag i måneden
   const lastDayOfMonth = getDay(monthEnd);
   const daysToIncludeFromNextMonth = (7 - ((lastDayOfMonth + 1) % 7)) % 7;
   const calendarEnd = addDays(monthEnd, daysToIncludeFromNextMonth);
@@ -239,7 +233,6 @@ export function MonthView({
     end: calendarEnd,
   });
 
-  // Beregn antal uger for at sikre konsistent grid
   const numberOfWeeks = Math.ceil(days.length / 7);
 
   return (
@@ -256,143 +249,125 @@ export function MonthView({
         ))}
       </div>
 
-      {/* Kalendergrid med animation */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={date.toISOString()}
-          initial={{ opacity: 0, y: 20, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -20, scale: 0.95 }}
-          transition={{
-            duration: 0.3,
-            ease: "easeOut",
-          }}
-          className="grid grid-cols-7 flex-1 print:gap-0"
-          style={{
-            gridTemplateRows: `repeat(${numberOfWeeks}, minmax(120px, 1fr))`,
-          }}
-        >
-          {days.map((day, dayIdx) => {
-            const dayEvents = getEventsForDay(day);
-            const isCurrentMonth = isSameMonth(day, date);
-            const weekNumber = getWeekNumber(day);
-            const isFirstInWeek = dayIdx % 7 === 0;
+      {/* Kalendergrid */}
+      <div
+        className="grid grid-cols-7 flex-1 print:gap-0"
+        style={{
+          gridTemplateRows: `repeat(${numberOfWeeks}, minmax(120px, 1fr))`,
+        }}
+      >
+        {days.map((day, dayIdx) => {
+          const dayEvents = getEventsForDay(day);
+          const isCurrentMonth = isSameMonth(day, date);
+          const weekNumber = getWeekNumber(day);
+          const isFirstInWeek = dayIdx % 7 === 0;
 
-            return (
-              <div
-                key={day.toISOString()}
-                className={cn(
-                  "border-r border-b border-border print:border-gray-200 p-1 relative transition-colors duration-200",
-                  !isCurrentMonth && "bg-muted/30 print:bg-gray-50",
-                  isToday(day) && "bg-primary/5 print:bg-transparent",
-                  "hover:bg-accent/50 cursor-pointer group print:hover:bg-transparent"
-                )}
-                onClick={() =>
-                  onDateChange(day, { shouldOpenCreateEvent: true })
-                }
-              >
-                {/* Ugenummer (kun for første dag i ugen) */}
-                {isFirstInWeek && (
-                  <div className="absolute -left-8 top-1 text-xs text-muted-foreground print:text-gray-500 print:font-medium">
-                    {weekNumber}
-                  </div>
-                )}
-
-                {/* Dato */}
-                <div
-                  className={cn(
-                    "text-sm font-medium h-6 flex items-center justify-end px-1 print:text-base print:font-semibold",
-                    !isCurrentMonth &&
-                      "text-muted-foreground/50 italic print:text-gray-400",
-                    isToday(day) &&
-                      "text-primary font-bold print:text-inherit print:font-normal"
-                  )}
-                >
-                  {!isCurrentMonth && (
-                    <span className="text-xs mr-1 text-muted-foreground/40 print:text-gray-400">
-                      {format(day, "MMM", { locale: da })}
-                    </span>
-                  )}
-                  {format(day, "d.")}
+          return (
+            <div
+              key={day.toISOString()}
+              className={cn(
+                "border-r border-b border-border print:border-gray-200 p-1 relative transition-colors duration-200",
+                !isCurrentMonth && "bg-muted/30 print:bg-gray-50",
+                isToday(day) && "bg-primary/5 print:bg-transparent",
+                "hover:bg-accent/50 cursor-pointer group print:hover:bg-transparent"
+              )}
+              onClick={() => onDateChange(day, { shouldOpenCreateEvent: true })}
+            >
+              {isFirstInWeek && (
+                <div className="absolute -left-8 top-1 text-xs text-muted-foreground print:text-gray-500 print:font-medium">
+                  {weekNumber}
                 </div>
+              )}
 
-                {/* Events */}
-                {isLoading ? (
-                  <div className="space-y-1">
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-4 w-1/2" />
-                  </div>
-                ) : (
-                  <div className="space-y-1 max-h-[calc(100%-1.5rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/30 print:max-h-none print:overflow-visible">
-                    {dayEvents.map((event) => (
-                      <TooltipProvider key={event.id}>
-                        <Tooltip delayDuration={200}>
-                          <TooltipTrigger asChild>
-                            <div>
-                              <MemoizedEventItem
-                                event={event}
-                                className={cn(
-                                  "text-xs p-1 rounded-sm shadow-sm cursor-pointer transition-all duration-200",
-                                  "hover:shadow-md hover:scale-[1.02] print:hover:shadow-none print:hover:scale-100",
-                                  "print:text-sm print:p-1.5 print:rounded-md print:border print:shadow-none",
-                                  !isCurrentMonth && "opacity-50"
-                                )}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedEvent(event);
-                                }}
-                              />
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent
-                            side="right"
-                            className="max-w-[300px] print:hidden"
-                          >
-                            <div className="space-y-1">
-                              <p className="font-medium">{event.title}</p>
-                              {!event.is_all_day && (
-                                <p className="text-sm text-muted-foreground">
-                                  {event.start_time} - {event.end_time}
-                                </p>
-                              )}
-                              {event.description && (
-                                <p className="text-sm">{event.description}</p>
-                              )}
-                              {event.location && (
-                                <p className="text-sm text-muted-foreground">
-                                  📍 {event.location}
-                                </p>
-                              )}
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ))}
-                  </div>
+              <div
+                className={cn(
+                  "text-sm font-medium h-6 flex items-center justify-end px-1 print:text-base print:font-semibold",
+                  !isCurrentMonth &&
+                    "text-muted-foreground/50 italic print:text-gray-400",
+                  isToday(day) &&
+                    "text-primary font-bold print:text-inherit print:font-normal"
                 )}
-
-                {/* Mere indikator hvis der er flere events end der kan vises */}
-                {dayEvents.length > 4 && (
-                  <div className="absolute bottom-1 right-1 text-xs text-muted-foreground bg-background/80 px-1 rounded print:hidden">
-                    +{dayEvents.length - 4} mere
-                  </div>
+              >
+                {!isCurrentMonth && (
+                  <span className="text-xs mr-1 text-muted-foreground/40 print:text-gray-400">
+                    {format(day, "MMM", { locale: da })}
+                  </span>
                 )}
+                {format(day, "d.")}
               </div>
-            );
-          })}
-        </motion.div>
-      </AnimatePresence>
+
+              {isLoading ? (
+                <div className="space-y-1">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              ) : (
+                <div className="space-y-1 max-h-[calc(100%-1.5rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/30 print:max-h-none print:overflow-visible">
+                  {dayEvents.map((event) => (
+                    <TooltipProvider key={event.id}>
+                      <Tooltip delayDuration={200}>
+                        <TooltipTrigger asChild>
+                          <div>
+                            <MemoizedEventItem
+                              event={event}
+                              className={cn(
+                                "text-xs p-1 rounded-sm shadow-sm cursor-pointer transition-all duration-200",
+                                "hover:shadow-md hover:scale-[1.02] print:hover:shadow-none print:hover:scale-100",
+                                "print:text-sm print:p-1.5 print:rounded-md print:border print:shadow-none",
+                                !isCurrentMonth && "opacity-50"
+                              )}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedEvent(event);
+                              }}
+                            />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="right"
+                          className="max-w-[300px] print:hidden"
+                        >
+                          <div className="space-y-1">
+                            <p className="font-medium">{event.title}</p>
+                            {!event.is_all_day && (
+                              <p className="text-sm text-muted-foreground">
+                                {event.start_time} - {event.end_time}
+                              </p>
+                            )}
+                            {event.description && (
+                              <p className="text-sm">{event.description}</p>
+                            )}
+                            {event.location && (
+                              <p className="text-sm text-muted-foreground">
+                                📍 {event.location}
+                              </p>
+                            )}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ))}
+                </div>
+              )}
+
+              {dayEvents.length > 4 && (
+                <div className="absolute bottom-1 right-1 text-xs text-muted-foreground bg-background/80 px-1 rounded print:hidden">
+                  +{dayEvents.length - 4} mere
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
       {/* Event dialog */}
-      <AnimatePresence>
-        {selectedEvent && (
-          <ViewEventDialog
-            event={selectedEvent}
-            isOpen={!!selectedEvent}
-            onOpenChange={(open) => !open && setSelectedEvent(null)}
-          />
-        )}
-      </AnimatePresence>
+      {selectedEvent && (
+        <ViewEventDialog
+          event={selectedEvent}
+          isOpen={!!selectedEvent}
+          onOpenChange={(open) => !open && setSelectedEvent(null)}
+        />
+      )}
     </div>
   );
 }
