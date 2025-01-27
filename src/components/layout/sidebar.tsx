@@ -99,8 +99,6 @@ interface SidebarProps {
   onOpenChange: (open: boolean) => void;
   showHolidays?: boolean;
   onShowHolidaysChange?: (show: boolean) => void;
-  showFunHolidays?: boolean;
-  onShowFunHolidaysChange?: (show: boolean) => void;
   handlePrint: () => void;
 }
 
@@ -127,8 +125,6 @@ export default function CalendarSidebar({
   onOpenChange,
   showHolidays = true,
   onShowHolidaysChange = () => {},
-  showFunHolidays = true,
-  onShowFunHolidaysChange = () => {},
   handlePrint,
 }: SidebarProps) {
   const [isCreateCalendarOpen, setIsCreateCalendarOpen] = useState(false);
@@ -515,9 +511,6 @@ export default function CalendarSidebar({
                   .map((calendar) => {
                     const isVisible = visibleCalendarIds.includes(calendar.id);
                     const isSelected = selectedCalendarId === calendar.id;
-                    const calendarType = CALENDAR_TYPES.find(
-                      (type) => type.id === calendar.type
-                    );
 
                     return (
                       <div
