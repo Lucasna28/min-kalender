@@ -45,16 +45,16 @@ import {
 } from "@/components/ui/select";
 import { motion } from "framer-motion";
 
-// Prædefinerede farver med navne
+// Prædefinerede farver
 const PREDEFINED_COLORS = [
-  { hex: "#4285f4", name: "Blå" },
-  { hex: "#34A853", name: "Grøn" },
-  { hex: "#EA4335", name: "Rød" },
-  { hex: "#FBBC05", name: "Gul" },
-  { hex: "#46BDC6", name: "Turkis" },
-  { hex: "#9C27B0", name: "Lilla" },
-  { hex: "#FF6D00", name: "Orange" },
-  { hex: "#607D8B", name: "Grå" },
+  { hex: "#4285f4" },
+  { hex: "#34A853" },
+  { hex: "#EA4335" },
+  { hex: "#FBBC05" },
+  { hex: "#46BDC6" },
+  { hex: "#9C27B0" },
+  { hex: "#FF6D00" },
+  { hex: "#607D8B" },
 ];
 
 interface EditCalendarDialogProps {
@@ -552,7 +552,7 @@ export function EditCalendarDialog({
                   <div>
                     <Label className="text-xs font-medium">Farve</Label>
                     <div className="grid grid-cols-4 gap-2 mt-1">
-                      {PREDEFINED_COLORS.map(({ hex, name }) => (
+                      {PREDEFINED_COLORS.map(({ hex }) => (
                         <motion.button
                           key={hex}
                           type="button"
