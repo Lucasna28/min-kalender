@@ -51,7 +51,7 @@ export function ProfileSettingsDialog({
         title: "Profil opdateret",
         description: "Dine ændringer er blevet gemt.",
       });
-    } catch (_) {
+    } catch {
       toast({
         title: "Fejl",
         description: "Der skete en fejl ved opdatering af profilen.",
