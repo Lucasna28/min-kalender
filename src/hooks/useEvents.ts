@@ -1,7 +1,8 @@
-import { useState, useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import { format } from "date-fns";
 import { useSupabase } from "@/providers/supabase-provider";
 import { useToast } from "@/components/ui/use-toast";
+import { PostgrestError } from "supabase";
 
 interface EventCache {
   [key: string]: {
@@ -30,34 +31,37 @@ export function useEvents() {
   const getEvents = useCallback(async (startDate: Date, endDate: Date) => {
     try {
       setIsLoading(true);
-      
-      const cacheKey = `${format(startDate, 'yyyy-MM-dd')}_${format(endDate, 'yyyy-MM-dd')}`;
-      
+
+      const cacheKey = `${format(startDate, "yyyy-MM-dd")}_${
+        format(endDate, "yyyy-MM-dd")
+      }`;
+
       const cached = eventCache.current[cacheKey];
       if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
         return cached.events;
       }
 
       const { data: events, error } = await supabase
-        .from('events')
-        .select('*')
-        .gte('start_date', format(startDate, 'yyyy-MM-dd'))
-        .lte('end_date', format(endDate, 'yyyy-MM-dd'))
-        .order('start_date', { ascending: true });
+        .from("events")
+        .select("*")
+        .gte("start_date", format(startDate, "yyyy-MM-dd"))
+        .lte("end_date", format(endDate, "yyyy-MM-dd"))
+        .order("start_date", { ascending: true });
 
       if (error) throw error;
 
       eventCache.current[cacheKey] = {
         events: events || [],
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       return events || [];
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as Error | PostgrestError;
       toast({
-        title: 'Fejl ved hentning',
-        description: error.message || 'Kunne ikke hente begivenheder',
-        variant: 'destructive',
+        title: "Fejl ved hentning",
+        description: err.message || "Kunne ikke hente begivenheder",
+        variant: "destructive",
       });
       return [];
     } finally {
@@ -67,6 +71,6 @@ export function useEvents() {
 
   return {
     isLoading,
-    getEvents
+    getEvents,
   };
-} 
+}
