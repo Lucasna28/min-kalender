@@ -8,7 +8,8 @@ import Sidebar from "@/components/layout/sidebar";
 import Navbar from "@/components/layout/navbar";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { CalendarViewType } from "@/types/calendar";
+import { CalendarViewType, Event } from "@/types/calendar";
+import { useEvents } from "@/hooks/use-events";
 
 export default function AppPage() {
   const { user } = useSupabase().auth;
@@ -21,6 +22,9 @@ export default function AppPage() {
     null
   );
   const [showHolidays, setShowHolidays] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const { events, createEvent, updateEvent, deleteEvent } =
+    useEvents(visibleCalendarIds);
 
   if (!user) {
     router.push("/login");
@@ -62,10 +66,13 @@ export default function AppPage() {
       >
         <div className="h-full">
           <CalendarView
-            className="h-full"
-            selectedDate={date}
-            onDateChange={setDate}
+            date={date}
             view={view}
+            events={events}
+            onEventClick={setSelectedEvent}
+            onEventCreate={createEvent}
+            onEventUpdate={updateEvent}
+            onEventDelete={deleteEvent}
           />
         </div>
       </main>
