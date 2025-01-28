@@ -16,11 +16,20 @@ export default function AppPage() {
   const [date, setDate] = useState(new Date());
   const [view, setView] = useState<CalendarViewType>("month");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [visibleCalendarIds, setVisibleCalendarIds] = useState<string[]>([]);
+  const [selectedCalendarId, setSelectedCalendarId] = useState<string | null>(
+    null
+  );
+  const [showHolidays, setShowHolidays] = useState(true);
 
   if (!user) {
     router.push("/login");
     return null;
   }
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   return (
     <motion.div
@@ -32,11 +41,18 @@ export default function AppPage() {
       <Navbar />
       <Sidebar
         isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
+        onOpenChange={setIsSidebarOpen}
         selectedDate={date}
         onDateChange={setDate}
         view={view}
         onViewChange={setView}
+        visibleCalendarIds={visibleCalendarIds}
+        onVisibleCalendarIdsChange={setVisibleCalendarIds}
+        selectedCalendarId={selectedCalendarId}
+        onSelectedCalendarIdChange={setSelectedCalendarId}
+        showHolidays={showHolidays}
+        onShowHolidaysChange={setShowHolidays}
+        handlePrint={handlePrint}
       />
       <main
         className={cn(
