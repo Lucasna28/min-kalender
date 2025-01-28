@@ -1,4 +1,4 @@
-export type CalendarViewType = "day" | "week" | "month" | "year" | "schedule";
+export type CalendarViewType = "day" | "week" | "month" | "year";
 
 export interface Event {
   id: string;
