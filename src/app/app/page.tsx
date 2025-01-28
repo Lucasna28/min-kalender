@@ -8,7 +8,7 @@ import Sidebar from "@/components/layout/sidebar";
 import Navbar from "@/components/layout/navbar";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { CalendarViewType } from "@/types/calendar";
+import { CalendarViewType, Event } from "@/types/calendar";
 import { useEvents } from "@/hooks/use-events";
 import { EventDialog } from "@/components/calendar/event-dialog";
 
@@ -23,7 +23,7 @@ export default function AppPage() {
     null
   );
   const [showHolidays, setShowHolidays] = useState(true);
-  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
   const { events, createEvent, updateEvent, deleteEvent } =
     useEvents(visibleCalendarIds);

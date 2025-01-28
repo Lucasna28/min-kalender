@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { VIEW_OPTIONS } from "@/lib/constants";
 import { useSupabase } from "@/components/providers/supabase-provider";
 import "@/styles/print.css";
+import { Event } from "@/types/calendar";
+import { CreateEventData } from "@/hooks/use-events";
 
 export type CalendarViewType = "day" | "week" | "month" | "year";
 
@@ -28,6 +30,10 @@ interface CalendarViewProps {
   isCreateEventOpen?: boolean;
   onCreateEventOpenChange?: (open: boolean) => void;
   showHolidays: boolean;
+  events: Event[];
+  onEventCreate: (eventData: CreateEventData) => Promise<Event>;
+  onEventUpdate: (event: Event) => Promise<void>;
+  onEventDelete: (eventId: string) => Promise<void>;
 }
 
 const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
@@ -41,6 +47,10 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
       isCreateEventOpen = false,
       onCreateEventOpenChange,
       showHolidays,
+      events,
+      onEventCreate,
+      onEventUpdate,
+      onEventDelete,
     },
     ref
   ) => {
@@ -48,8 +58,7 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
     const [selectedEventDate, setSelectedEventDate] = useState<Date>(
       new Date()
     );
-    const { events, isLoading, createEvent, refetch } =
-      useEvents(visibleCalendarIds);
+    const { createEvent, refetch } = useEvents(visibleCalendarIds);
     const { supabase } = useSupabase();
 
     // Subscribe til events ændringer
@@ -247,7 +256,7 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
           <CurrentView
             date={selectedDate}
             events={events}
-            isLoading={isLoading}
+            isLoading={false}
             onDateChange={handleDateChange}
             showHolidays={showHolidays}
           />
