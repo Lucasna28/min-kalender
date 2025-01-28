@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { CalendarViewType, Event } from "@/types/calendar";
 import { useEvents } from "@/hooks/use-events";
+import { EventDialog } from "@/components/calendar/event-dialog";
 
 export default function AppPage() {
   const { user } = useSupabase().auth;
@@ -76,6 +77,12 @@ export default function AppPage() {
           />
         </div>
       </main>
+      <EventDialog
+        event={selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+        onUpdate={updateEvent}
+        onDelete={deleteEvent}
+      />
     </motion.div>
   );
 }
