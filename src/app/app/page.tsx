@@ -24,8 +24,16 @@ export default function AppPage() {
   );
   const [showHolidays, setShowHolidays] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const { events, createEvent, updateEvent, deleteEvent } =
-    useEvents(visibleCalendarIds);
+  const { events, createEvent, updateEvent, deleteEvent } = useEvents(
+    visibleCalendarIds
+  ) as {
+    events: Event[];
+    isLoading: boolean;
+    createEvent: (eventData: CreateEventData) => Promise<Event>;
+    updateEvent: (event: Event) => Promise<void>;
+    deleteEvent: (eventId: string) => Promise<void>;
+    refetch: () => Promise<void>;
+  };
 
   if (!user) {
     router.push("/login");
