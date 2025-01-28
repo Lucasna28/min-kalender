@@ -12,6 +12,19 @@ interface EventCache {
   };
 }
 
+// Type for rå event data fra databasen
+interface DatabaseEvent {
+  id: string;
+  title: string;
+  description?: string;
+  start: string;
+  end: string;
+  allDay?: boolean;
+  userId: string;
+  calendar_id: string;
+  color?: string;
+}
+
 export type CreateEventData = Omit<Event, "id" | "userId">;
 
 interface UseEventsReturn {
@@ -54,7 +67,7 @@ export function useEvents(visibleCalendarIds: string[]): UseEventsReturn {
 
       if (error) throw error;
 
-      const formattedEvents = (events || []).map((event: any) => ({
+      const formattedEvents = (events || []).map((event: DatabaseEvent) => ({
         ...event,
         start: new Date(event.start),
         end: new Date(event.end),
