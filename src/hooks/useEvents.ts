@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from "react";
-import { format } from "date-fns";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { endOfMonth, format, startOfMonth } from "date-fns";
 import { useSupabase } from "@/providers/supabase-provider";
 import { useToast } from "@/components/ui/use-toast";
 import { PostgrestError } from "supabase";
@@ -17,6 +17,7 @@ export type CreateEventData = Omit<Event, "id" | "userId">;
 export function useEvents(visibleCalendarIds: string[]) {
   const { supabase } = useSupabase();
   const [isLoading, setIsLoading] = useState(false);
+  const [events, setEvents] = useState<Event[]>([]);
   const { toast } = useToast();
   const eventCache = useRef<EventCache>({});
   const CACHE_DURATION = 5 * 60 * 1000; // 5 minutter
@@ -69,6 +70,17 @@ export function useEvents(visibleCalendarIds: string[]) {
     }
   }, [supabase, toast, visibleCalendarIds]);
 
+  // Hent events for den aktuelle måned når komponenten mountes eller når visibleCalendarIds ændres
+  useEffect(() => {
+    const now = new Date();
+    const start = startOfMonth(now);
+    const end = endOfMonth(now);
+
+    getEvents(start, end).then((fetchedEvents) => {
+      setEvents(fetchedEvents);
+    });
+  }, [getEvents, visibleCalendarIds]);
+
   const createEvent = useCallback(async (eventData: CreateEventData) => {
     try {
       setIsLoading(true);
@@ -85,6 +97,14 @@ export function useEvents(visibleCalendarIds: string[]) {
 
       if (error) throw error;
 
+      // Opdater events state med den nye begivenhed
+      const newEvent = {
+        ...data,
+        start: new Date(data.start),
+        end: new Date(data.end),
+      };
+      setEvents((prev) => [...prev, newEvent]);
+
       // Ryd cache for at tvinge en genindlæsning
       eventCache.current = {};
 
@@ -93,7 +113,7 @@ export function useEvents(visibleCalendarIds: string[]) {
         description: "Din begivenhed er blevet oprettet",
       });
 
-      return data;
+      return newEvent;
     } catch (error: unknown) {
       const err = error as Error | PostgrestError;
       toast({
@@ -121,6 +141,9 @@ export function useEvents(visibleCalendarIds: string[]) {
         .eq("id", event.id);
 
       if (error) throw error;
+
+      // Opdater events state med den opdaterede begivenhed
+      setEvents((prev) => prev.map((e) => e.id === event.id ? event : e));
 
       // Ryd cache for at tvinge en genindlæsning
       eventCache.current = {};
@@ -153,6 +176,9 @@ export function useEvents(visibleCalendarIds: string[]) {
 
       if (error) throw error;
 
+      // Fjern den slettede begivenhed fra events state
+      setEvents((prev) => prev.filter((e) => e.id !== eventId));
+
       // Ryd cache for at tvinge en genindlæsning
       eventCache.current = {};
 
@@ -173,16 +199,24 @@ export function useEvents(visibleCalendarIds: string[]) {
     }
   }, [supabase, toast]);
 
+  const refetch = async () => {
+    const now = new Date();
+    const start = startOfMonth(now);
+    const end = endOfMonth(now);
+
+    // Ryd cache for at tvinge en genindlæsning
+    eventCache.current = {};
+
+    const fetchedEvents = await getEvents(start, end);
+    setEvents(fetchedEvents);
+  };
+
   return {
-    events: [],
+    events,
     isLoading,
     createEvent,
     updateEvent,
     deleteEvent,
-    refetch: () => {
-      // Ryd cache for at tvinge en genindlæsning
-      eventCache.current = {};
-      return Promise.resolve();
-    },
+    refetch,
   };
 }
