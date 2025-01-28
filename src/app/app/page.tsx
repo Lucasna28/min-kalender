@@ -8,12 +8,13 @@ import Sidebar from "@/components/layout/sidebar";
 import Navbar from "@/components/layout/navbar";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { CalendarViewType } from "@/types/calendar";
 
 export default function AppPage() {
   const { user } = useSupabase().auth;
   const router = useRouter();
   const [date, setDate] = useState(new Date());
-  const [view, setView] = useState<"day" | "week" | "month">("month");
+  const [view, setView] = useState<CalendarViewType>("month");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   if (!user) {
