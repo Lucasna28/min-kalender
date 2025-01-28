@@ -8,8 +8,8 @@ import Sidebar from "@/components/layout/sidebar";
 import Navbar from "@/components/layout/navbar";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { CalendarViewType, Event } from "@/types/calendar";
-import { useEvents, CreateEventData } from "@/hooks/use-events";
+import { CalendarViewType } from "@/types/calendar";
+import { useEvents } from "@/hooks/use-events";
 import { EventDialog } from "@/components/calendar/event-dialog";
 
 export default function AppPage() {
@@ -23,17 +23,10 @@ export default function AppPage() {
     null
   );
   const [showHolidays, setShowHolidays] = useState(true);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const { events, createEvent, updateEvent, deleteEvent } = useEvents(
-    visibleCalendarIds
-  ) as unknown as {
-    events: Event[];
-    isLoading: boolean;
-    createEvent: (eventData: CreateEventData) => Promise<Event>;
-    updateEvent: (event: Event) => Promise<void>;
-    deleteEvent: (eventId: string) => Promise<void>;
-    refetch: () => Promise<void>;
-  };
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
+  const { events, createEvent, updateEvent, deleteEvent } =
+    useEvents(visibleCalendarIds);
 
   if (!user) {
     router.push("/login");
@@ -75,13 +68,15 @@ export default function AppPage() {
       >
         <div className="h-full">
           <CalendarView
-            date={date}
             view={view}
-            events={events}
-            onEventClick={setSelectedEvent}
-            onEventCreate={createEvent}
-            onEventUpdate={updateEvent}
-            onEventDelete={deleteEvent}
+            selectedDate={date}
+            onDateChange={setDate}
+            onViewChange={setView}
+            visibleCalendarIds={visibleCalendarIds}
+            onSidebarOpenChange={setIsSidebarOpen}
+            isCreateEventOpen={isCreateEventOpen}
+            onCreateEventOpenChange={setIsCreateEventOpen}
+            showHolidays={showHolidays}
           />
         </div>
       </main>
