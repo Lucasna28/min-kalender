@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { endOfMonth, format, startOfMonth } from "date-fns";
-import { useSupabase } from "@/providers/supabase-provider";
+import { useSupabase } from "@/components/providers/supabase-provider";
 import { useToast } from "@/components/ui/use-toast";
-import { PostgrestError } from "supabase";
+import { PostgrestError } from "@supabase/supabase-js";
 import { Event } from "@/types/calendar";
 
 interface EventCache {
@@ -54,7 +54,7 @@ export function useEvents(visibleCalendarIds: string[]): UseEventsReturn {
 
       if (error) throw error;
 
-      const formattedEvents = (events || []).map((event) => ({
+      const formattedEvents = (events || []).map((event: any) => ({
         ...event,
         start: new Date(event.start),
         end: new Date(event.end),
