@@ -80,15 +80,6 @@ export interface CreateEventData {
   invitations?: string[];
 }
 
-interface EventInvitation {
-  email: string;
-  status: "pending" | "accepted" | "declined";
-  user?: {
-    full_name?: string;
-    email: string;
-  };
-}
-
 // Funktion til at beregne påskedag
 function getEasterSunday(year: number) {
   const a = year % 19;
@@ -122,7 +113,7 @@ function addDays(date: Date, days: number) {
 }
 
 // Funktion til at hente danske helligdage
-function getDanishHolidays(year: number) {
+export function getDanishHolidays(year: number) {
   // Beregn påskedag
   const easterSunday = getEasterSunday(year);
 
