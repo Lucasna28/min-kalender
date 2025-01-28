@@ -6,6 +6,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { da } from "date-fns/locale";
@@ -37,11 +39,13 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { User as SupabaseUser } from "@supabase/supabase-js";
+import { Event } from "@/types/calendar";
 
 interface ViewEventDialogProps {
-  event: CalendarEvent;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
+  event: Event | null;
+  onClose: () => void;
+  onEdit?: (event: Event) => void;
+  onDelete?: (eventId: string) => void;
 }
 
 const categoryEmojis: { [key: string]: string } = {
@@ -74,9 +78,20 @@ const statusColors = {
 
 export function ViewEventDialog({
   event,
-  isOpen,
-  onOpenChange,
+  onClose,
+  onEdit,
+  onDelete,
 }: ViewEventDialogProps) {
+  if (!event) return null;
+
+  const handleEdit = () => {
+    onEdit?.(event);
+  };
+
+  const handleDelete = () => {
+    onDelete?.(event.id);
+  };
+
   const { supabase } = useSupabase();
   const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -84,35 +99,14 @@ export function ViewEventDialog({
 
   // Hent den aktuelle bruger når dialogen åbnes
   useEffect(() => {
-    if (isOpen) {
+    if (!!event) {
       supabase.auth.getUser().then(({ data: { user } }) => {
         setCurrentUser(user);
       });
     }
-  }, [isOpen, supabase.auth]);
+  }, [!!event, supabase.auth]);
 
   const isOwner = currentUser?.id === event.user_id;
-
-  const handleDelete = async () => {
-    try {
-      setIsDeleting(true);
-      const { error } = await supabase
-        .from("events")
-        .delete()
-        .eq("id", event.id);
-
-      if (error) throw error;
-
-      toast.success("Begivenheden blev slettet");
-      onOpenChange(false);
-    } catch (error) {
-      console.error("Fejl ved sletning af begivenhed:", error);
-      toast.error("Der skete en fejl ved sletning af begivenheden");
-    } finally {
-      setIsDeleting(false);
-      setShowDeleteDialog(false);
-    }
-  };
 
   const getCategoryEmoji = (category: string | undefined) => {
     if (!category) return categoryEmojis.default;
@@ -122,8 +116,8 @@ export function ViewEventDialog({
 
   return (
     <AnimatePresence>
-      {isOpen && (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      {!!event && (
+        <Dialog open={!!event} onOpenChange={onClose}>
           <DialogContent
             className={cn(
               "max-w-[95vw] w-full lg:max-w-3xl p-0 overflow-hidden",
@@ -159,9 +153,12 @@ export function ViewEventDialog({
                     className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full"
                   >
                     <span className="text-white/90 text-sm font-medium">
-                      {event.is_all_day
+                      {event.allDay
                         ? "Hele dagen"
-                        : `${event.start_time} - ${event.end_time}`}
+                        : `${format(event.start, "HH:mm")} - ${format(
+                            event.end,
+                            "HH:mm"
+                          )}`}
                     </span>
                   </motion.div>
                 </div>
@@ -222,20 +219,19 @@ export function ViewEventDialog({
                     </div>
                     <div className="space-y-1 min-w-0">
                       <p className="font-medium">
-                        {format(event.start_date, "EEEE d. MMMM yyyy", {
+                        {format(event.start, "EEEE d. MMMM yyyy", {
                           locale: da,
                         })}
                       </p>
-                      {event.end_date.getTime() !==
-                        event.start_date.getTime() && (
+                      {event.end.getTime() !== event.start.getTime() && (
                         <p className="text-muted-foreground">
                           til{" "}
-                          {format(event.end_date, "EEEE d. MMMM yyyy", {
+                          {format(event.end, "EEEE d. MMMM yyyy", {
                             locale: da,
                           })}
                         </p>
                       )}
-                      {event.is_all_day && (
+                      {event.allDay && (
                         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 mt-1 text-xs font-medium text-primary bg-primary/10 rounded-full">
                           Hele dagen
                         </span>
@@ -243,27 +239,32 @@ export function ViewEventDialog({
                     </div>
                   </div>
 
-                  {!event.is_all_day && event.start_time && event.end_time && (
-                    <div className="flex items-center gap-4 group">
-                      <div
-                        className={cn(
-                          "bg-primary/10 p-2.5 rounded-xl shrink-0",
-                          "transition-all duration-300 group-hover:scale-110 group-hover:rotate-[8deg] group-hover:bg-primary/20"
-                        )}
-                      >
-                        <Clock className="w-5 h-5 text-primary" />
+                  {!event.allDay &&
+                    event.start.getTime() !== event.end.getTime() && (
+                      <div className="flex items-center gap-4 group">
+                        <div
+                          className={cn(
+                            "bg-primary/10 p-2.5 rounded-xl shrink-0",
+                            "transition-all duration-300 group-hover:scale-110 group-hover:rotate-[8deg] group-hover:bg-primary/20"
+                          )}
+                        >
+                          <Clock className="w-5 h-5 text-primary" />
+                        </div>
+                        <div className="space-y-1 min-w-0">
+                          <p className="font-medium">
+                            {format(event.start, "HH:mm")} -{" "}
+                            {format(event.end, "HH:mm")}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Varighed:{" "}
+                            {calculateDuration(
+                              format(event.start, "HH:mm"),
+                              format(event.end, "HH:mm")
+                            )}
+                          </p>
+                        </div>
                       </div>
-                      <div className="space-y-1 min-w-0">
-                        <p className="font-medium">
-                          {event.start_time} - {event.end_time}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Varighed:{" "}
-                          {calculateDuration(event.start_time, event.end_time)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                    )}
 
                   {event.location && (
                     <div className="flex items-start gap-2">
@@ -375,59 +376,24 @@ export function ViewEventDialog({
                 </div>
               </motion.div>
 
-              {isOwner && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="flex flex-col sm:flex-row gap-2 mt-8"
-                >
-                  <Button
-                    variant="outline"
-                    className="w-full sm:w-auto order-last sm:order-first hover:bg-background"
-                    onClick={() => onOpenChange(false)}
-                  >
-                    Luk
+              <DialogFooter>
+                <Button variant="outline" onClick={onClose}>
+                  Luk
+                </Button>
+                {onEdit && (
+                  <Button variant="outline" onClick={handleEdit}>
+                    Rediger
                   </Button>
-                  <div className="flex gap-2 w-full sm:w-auto sm:ml-auto">
-                    <Button
-                      variant="default"
-                      className="flex-1 sm:flex-none gap-2 bg-primary hover:bg-primary/90"
-                      onClick={() => {
-                        // TODO: Implementer redigering
-                        toast.info("Redigering kommer snart");
-                      }}
-                    >
-                      <Edit className="w-4 h-4" />
-                      Rediger
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      className="flex-1 sm:flex-none gap-2 hover:bg-destructive/90"
-                      onClick={() => setShowDeleteDialog(true)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Slet
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-              {!isOwner && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="mt-8"
-                >
+                )}
+                {onDelete && (
                   <Button
-                    variant="outline"
-                    className="w-full sm:w-auto hover:bg-background"
-                    onClick={() => onOpenChange(false)}
+                    variant="destructive"
+                    onClick={() => setShowDeleteDialog(true)}
                   >
-                    Luk
+                    Slet
                   </Button>
-                </motion.div>
-              )}
+                )}
+              </DialogFooter>
             </div>
           </DialogContent>
         </Dialog>

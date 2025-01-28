@@ -28,9 +28,10 @@ import { Advent } from "./special-days/advent";
 import { Pizzadag } from "./special-days/pizzadag";
 import confetti from "canvas-confetti";
 import { Palmesondag } from "./special-days/palmesondag";
+import { Event } from "@/types/calendar";
 
 interface EventItemProps {
-  event: CalendarEvent;
+  event: Event;
   className?: string;
   style?: React.CSSProperties;
   onClick?: (e: React.MouseEvent) => void;
@@ -901,21 +902,17 @@ export function EventItem({
   }
 
   return (
-    <motion.div
+    <div
       className={cn(
-        "px-2 py-1 font-medium text-white overflow-hidden",
+        "flex items-center gap-2 rounded-md px-2 py-1 text-sm",
+        !event.allDay && "bg-primary text-primary-foreground",
+        event.allDay && "bg-muted",
         className
       )}
-      style={{
-        backgroundColor: event.color || "#4285F4",
-        ...style,
-      }}
+      style={{ backgroundColor: event.color }}
       onClick={onClick}
-      whileHover={{ scale: 1.02 }}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
     >
-      <div className="truncate text-xs sm:text-sm">{event.title}</div>
-    </motion.div>
+      <span className="truncate">{event.title}</span>
+    </div>
   );
 }

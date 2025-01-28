@@ -43,6 +43,7 @@ import { NotificationsListDialog } from "@/components/notifications/notification
 import { TutorialDialog } from "@/components/tutorial/tutorial-dialog";
 import { useReactToPrint } from "react-to-print";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function CalendarPage() {
   // State hooks
@@ -130,71 +131,112 @@ export default function CalendarPage() {
       try {
         const {
           data: { user },
+          error: userError,
         } = await supabase.auth.getUser();
-        if (user) {
-          // Hent brugerens tutorial status
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("has_completed_tutorial")
-            .eq("id", user.id)
-            .single();
 
-          // Hvis brugeren ikke har en profil eller ikke har gennemført tutorial
-          if (!profile || profile.has_completed_tutorial === null) {
-            setShowTutorial(true);
-            setTutorialProgress(0);
-          } else {
-            setTutorialProgress(profile.has_completed_tutorial ? 100 : 25);
-          }
+        if (userError) throw userError;
 
-          setUserEmail(user.email ?? null);
+        if (!user) {
+          router.push("/login");
+          return;
         }
+
+        // Hent brugerens tutorial status
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("has_completed_tutorial")
+          .eq("id", user.id)
+          .single();
+
+        if (profileError) throw profileError;
+
+        // Hvis brugeren ikke har en profil eller ikke har gennemført tutorial
+        if (!profile || profile.has_completed_tutorial === null) {
+          setShowTutorial(true);
+          setTutorialProgress(0);
+        } else {
+          setTutorialProgress(profile.has_completed_tutorial ? 100 : 25);
+        }
+
+        setUserEmail(user.email ?? null);
       } catch (error) {
         console.error("Fejl ved tjek af ny bruger:", error);
+        toast.error("Der opstod en fejl ved indlæsning af brugerdata");
+        router.push("/login");
       } finally {
         setIsLoading(false);
       }
     };
 
     checkNewUser();
-  }, [supabase.auth]);
+  }, [supabase.auth, router]);
 
   useEffect(() => {
     const fetchUnreadCount = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
 
-      const { count } = await supabase
-        .from("notifications")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .eq("read", false);
+        if (userError) throw userError;
+        if (!user) return;
 
-      setUnreadCount(count || 0);
+        const { count, error: countError } = await supabase
+          .from("notifications")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("read", false);
+
+        if (countError) throw countError;
+
+        setUnreadCount(count || 0);
+      } catch (error) {
+        console.error("Fejl ved hentning af ulæste notifikationer:", error);
+        toast.error("Der opstod en fejl ved indlæsning af notifikationer");
+      }
     };
 
     fetchUnreadCount();
 
     // Subscribe til nye notifikationer
-    const channel = supabase
-      .channel("notifications")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "notifications",
-        },
-        () => {
-          fetchUnreadCount();
-        }
-      )
-      .subscribe();
+    let channel;
+    try {
+      channel = supabase
+        .channel("notifications")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "notifications",
+          },
+          () => {
+            fetchUnreadCount();
+          }
+        )
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            console.log("Subscribed til notifikationer");
+          } else if (status === "CLOSED") {
+            console.log("Subscription til notifikationer lukket");
+          } else if (status === "CHANNEL_ERROR") {
+            console.error("Fejl i notifikations channel");
+            toast.error("Der opstod en fejl med notifikationer");
+          }
+        });
+    } catch (error) {
+      console.error(
+        "Fejl ved oprettelse af notifikations subscription:",
+        error
+      );
+      toast.error("Der opstod en fejl med notifikationer");
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [supabase]);
 
@@ -211,10 +253,12 @@ export default function CalendarPage() {
   const handleLogout = async () => {
     try {
       setIsLoading(true);
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
       router.push("/login");
     } catch (error) {
       console.error("Fejl ved log ud:", error);
+      toast.error("Der opstod en fejl ved log ud");
     } finally {
       setIsLoading(false);
     }
@@ -225,20 +269,26 @@ export default function CalendarPage() {
     try {
       const {
         data: { user },
+        error: userError,
       } = await supabase.auth.getUser();
-      if (user) {
-        // Opdater brugerens tutorial status
-        await supabase.from("profiles").upsert({
-          id: user.id,
-          has_completed_tutorial: true,
-          updated_at: new Date().toISOString(),
-        });
 
-        setShowTutorial(false);
-        setTutorialProgress(100);
-      }
+      if (userError) throw userError;
+      if (!user) return;
+
+      // Opdater brugerens tutorial status
+      const { error: updateError } = await supabase.from("profiles").upsert({
+        id: user.id,
+        has_completed_tutorial: true,
+        updated_at: new Date().toISOString(),
+      });
+
+      if (updateError) throw updateError;
+
+      setShowTutorial(false);
+      setTutorialProgress(100);
     } catch (error) {
       console.error("Fejl ved gem af tutorial status:", error);
+      toast.error("Der opstod en fejl ved gem af tutorial status");
     }
   };
 
@@ -247,20 +297,26 @@ export default function CalendarPage() {
     try {
       const {
         data: { user },
+        error: userError,
       } = await supabase.auth.getUser();
-      if (user) {
-        // Opdater brugerens tutorial status som skippet
-        await supabase.from("profiles").upsert({
-          id: user.id,
-          has_completed_tutorial: false,
-          updated_at: new Date().toISOString(),
-        });
 
-        setShowTutorial(false);
-        setTutorialProgress(25);
-      }
+      if (userError) throw userError;
+      if (!user) return;
+
+      // Opdater brugerens tutorial status
+      const { error: updateError } = await supabase.from("profiles").upsert({
+        id: user.id,
+        has_completed_tutorial: true,
+        updated_at: new Date().toISOString(),
+      });
+
+      if (updateError) throw updateError;
+
+      setShowTutorial(false);
+      setTutorialProgress(100);
     } catch (error) {
-      console.error("Fejl ved gem af tutorial status:", error);
+      console.error("Fejl ved spring over af tutorial:", error);
+      toast.error("Der opstod en fejl ved spring over af tutorial");
     }
   };
 

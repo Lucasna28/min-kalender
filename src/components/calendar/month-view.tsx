@@ -148,7 +148,7 @@ DayCell.displayName = "DayCell";
 
 export function MonthView({
   date,
-  events,
+  events = [],
   isLoading,
   onDateChange,
   showHolidays,
@@ -187,7 +187,7 @@ export function MonthView({
   }
 
   const getEventsForDay = (day: Date): CalendarEvent[] => {
-    const regularEvents = events.filter((event) =>
+    const regularEvents = (events || []).filter((event) =>
       isSameDay(event.start_date, day)
     );
 

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSupabase } from "@/components/providers/supabase-provider";
 import { format } from "date-fns";
+import { Event } from "@/types/calendar";
 
 export type Event = {
   id: string;
@@ -147,7 +148,7 @@ export function getDanishHolidays(year: number) {
 
 export function useEvents(visibleCalendarIds: string[] = []) {
   const { supabase } = useSupabase();
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchEvents = useCallback(async () => {
@@ -170,16 +171,18 @@ export function useEvents(visibleCalendarIds: string[] = []) {
 
       // Konverter datoer og tilføj brugerdata
       const formattedEvents = events.map((event) => ({
-        ...event,
-        start_date: new Date(event.start_date),
-        end_date: new Date(event.end_date),
-        created_at: new Date(event.created_at),
-        creator_email: event.user_id === currentUser?.id
-          ? currentUser.email
-          : "Anden bruger",
-        creator_name: event.user_id === currentUser?.id
-          ? currentUser.user_metadata?.full_name
-          : "Anden bruger",
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        start: new Date(
+          event.start_date + (event.is_all_day ? "" : "T" + event.start_time),
+        ),
+        end: new Date(
+          event.end_date + (event.is_all_day ? "" : "T" + event.end_time),
+        ),
+        allDay: event.is_all_day,
+        userId: event.user_id,
+        color: event.color,
       }));
 
       setEvents(formattedEvents);
@@ -250,17 +253,33 @@ export function useEvents(visibleCalendarIds: string[] = []) {
         .single();
 
       if (error) {
-        console.error("Database fejl:", error);
         throw error;
       }
 
-      await fetchEvents();
-      return newEvent;
+      // Konverter til Event type
+      const event: Event = {
+        id: newEvent.id,
+        title: newEvent.title,
+        description: newEvent.description,
+        start: new Date(
+          newEvent.start_date +
+            (newEvent.is_all_day ? "" : "T" + newEvent.start_time),
+        ),
+        end: new Date(
+          newEvent.end_date +
+            (newEvent.is_all_day ? "" : "T" + newEvent.end_time),
+        ),
+        allDay: newEvent.is_all_day,
+        userId: newEvent.user_id,
+        color: newEvent.color,
+      };
+
+      return event;
     } catch (error) {
       console.error("Fejl ved oprettelse af begivenhed:", error);
       throw error;
     }
-  }, [supabase, fetchEvents]);
+  }, [supabase]);
 
   return {
     events,

@@ -50,6 +50,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Database } from "@/lib/database.types";
+import { Event } from "@/types/calendar";
 
 // Opdaterer predefinerede kategorier til at matche databasens enum værdier
 const PREDEFINED_CATEGORIES = [
@@ -167,20 +168,17 @@ const formSchema = z
   );
 
 interface CreateEventDialogProps {
-  isOpen?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  defaultDate?: Date;
-  defaultValues?: z.infer<typeof formSchema>;
-  createEvent: (
-    eventData: Database["public"]["Tables"]["events"]["Insert"]
-  ) => Promise<Database["public"]["Tables"]["events"]["Row"]>;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  selectedDate?: Date;
+  onEventCreate: (event: Omit<Event, "id" | "userId">) => Promise<void>;
 }
 
 export function CreateEventDialog({
   isOpen,
   onOpenChange,
-  defaultDate,
-  createEvent,
+  selectedDate = new Date(),
+  onEventCreate,
 }: CreateEventDialogProps) {
   const { toast } = useToast();
   const { supabase } = useSupabase();
@@ -192,24 +190,14 @@ export function CreateEventDialog({
     { email: string; full_name?: string }[]
   >([]);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<Omit<Event, "id" | "userId">>({
     defaultValues: {
       title: "",
       description: "",
-      start_date: defaultDate,
-      end_date: defaultDate,
-      start_time: "00:00",
-      end_time: "01:00",
-      is_all_day: false,
-      location: "",
-      calendar_id: "",
-      category: undefined,
-      color: "",
-      invitations: [],
-      repeat: "NONE",
-      repeat_interval: 1,
-      repeat_days: [],
+      start: selectedDate,
+      end: selectedDate,
+      allDay: false,
+      color: "#4285F4",
     },
   });
 
@@ -346,36 +334,17 @@ export function CreateEventDialog({
     fetchCalendarUsers();
   }, [form.watch("calendar_id")]);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const handleSubmit = async (data: Omit<Event, "id" | "userId">) => {
     try {
       setIsLoading(true);
 
-      const eventData = {
-        ...values,
-        start_date: values.start_date,
-        end_date: values.end_date,
-        start_time: values.is_all_day ? undefined : values.start_time,
-        end_time: values.is_all_day ? undefined : values.end_time,
-        category: values.category || null,
-      };
-
-      await createEvent(eventData);
-
-      toast({
-        title: "Begivenhed oprettet",
-        description: "Din begivenhed er blevet oprettet succesfuldt",
-        variant: "default",
-      });
-
-      onOpenChange(false);
+      await onEventCreate(data);
       form.reset();
+      onOpenChange(false);
+      toast.success("Begivenheden blev oprettet");
     } catch (error) {
       console.error("Fejl ved oprettelse af begivenhed:", error);
-      toast({
-        title: "Fejl ved oprettelse",
-        description: "Der skete en fejl. Prøv venligst igen.",
-        variant: "destructive",
-      });
+      toast.error("Der skete en fejl ved oprettelse af begivenheden");
     } finally {
       setIsLoading(false);
     }
@@ -399,7 +368,10 @@ export function CreateEventDialog({
 
         {calendarsWithWriteAccess.length > 0 ? (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form
+              onSubmit={form.handleSubmit(handleSubmit)}
+              className="space-y-4"
+            >
               <div className="p-4 space-y-4">
                 <FormField
                   control={form.control}
@@ -456,7 +428,7 @@ export function CreateEventDialog({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="start_date"
+                    name="start"
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel className="text-base">Startdato</FormLabel>
@@ -497,7 +469,7 @@ export function CreateEventDialog({
 
                   <FormField
                     control={form.control}
-                    name="end_date"
+                    name="end"
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel className="text-base">Slutdato</FormLabel>
@@ -539,7 +511,7 @@ export function CreateEventDialog({
 
                 <FormField
                   control={form.control}
-                  name="is_all_day"
+                  name="allDay"
                   render={({ field }) => (
                     <FormItem className="flex items-center space-x-2 h-11">
                       <FormControl>
@@ -556,7 +528,7 @@ export function CreateEventDialog({
                   )}
                 />
 
-                {!form.watch("is_all_day") && (
+                {!form.watch("allDay") && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
