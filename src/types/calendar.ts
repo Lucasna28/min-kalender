@@ -39,9 +39,12 @@ export interface CalendarState {
 }
 
 export interface SidebarProps {
-  defaultCollapsed?: boolean;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
+  isOpen: boolean;
+  onClose: () => void;
+  selectedDate: Date;
+  onDateChange: (date: Date) => void;
+  view: CalendarViewType;
+  onViewChange: (view: CalendarViewType) => void;
   className?: string;
   children?: React.ReactNode;
 }
