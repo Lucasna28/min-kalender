@@ -9,7 +9,7 @@ import Navbar from "@/components/layout/navbar";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { CalendarViewType, Event } from "@/types/calendar";
-import { useEvents } from "@/hooks/use-events";
+import { useEvents, CreateEventData } from "@/hooks/use-events";
 import { EventDialog } from "@/components/calendar/event-dialog";
 
 export default function AppPage() {
