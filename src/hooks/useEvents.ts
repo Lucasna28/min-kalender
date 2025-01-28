@@ -14,7 +14,16 @@ interface EventCache {
 
 export type CreateEventData = Omit<Event, "id" | "userId">;
 
-export function useEvents(visibleCalendarIds: string[]) {
+interface UseEventsReturn {
+  events: Event[];
+  isLoading: boolean;
+  createEvent: (eventData: CreateEventData) => Promise<Event>;
+  updateEvent: (event: Event) => Promise<void>;
+  deleteEvent: (eventId: string) => Promise<void>;
+  refetch: () => Promise<void>;
+}
+
+export function useEvents(visibleCalendarIds: string[]): UseEventsReturn {
   const { supabase } = useSupabase();
   const [isLoading, setIsLoading] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
