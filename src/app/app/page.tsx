@@ -26,7 +26,7 @@ export default function AppPage() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const { events, createEvent, updateEvent, deleteEvent } = useEvents(
     visibleCalendarIds
-  ) as {
+  ) as unknown as {
     events: Event[];
     isLoading: boolean;
     createEvent: (eventData: CreateEventData) => Promise<Event>;
