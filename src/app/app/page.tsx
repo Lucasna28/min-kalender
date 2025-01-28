@@ -77,6 +77,10 @@ export default function AppPage() {
             isCreateEventOpen={isCreateEventOpen}
             onCreateEventOpenChange={setIsCreateEventOpen}
             showHolidays={showHolidays}
+            events={events}
+            onEventCreate={createEvent}
+            onEventUpdate={updateEvent}
+            onEventDelete={deleteEvent}
           />
         </div>
       </main>
