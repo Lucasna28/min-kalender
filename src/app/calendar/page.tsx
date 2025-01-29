@@ -43,10 +43,13 @@ import { useReactToPrint } from "react-to-print";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useEvents } from "@/hooks/useEvents";
+import { CalendarViewType } from "@/components/calendar/calendar-view";
 
 export default function CalendarPage() {
   const { supabase } = useSupabase();
   const [visibleCalendarIds, setVisibleCalendarIds] = useState<string[]>([]);
+  const { createEvent, deleteEvent } = useEvents(visibleCalendarIds);
+  const [view, setView] = useState<CalendarViewType>("month");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedCalendarId, setSelectedCalendarId] = useState<string | null>(
     null
@@ -317,8 +320,6 @@ export default function CalendarPage() {
       toast.error("Der opstod en fejl ved spring over af tutorial");
     }
   };
-
-  const { createEvent, deleteEvent } = useEvents(visibleCalendarIds);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
