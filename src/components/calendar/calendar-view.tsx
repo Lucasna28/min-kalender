@@ -31,9 +31,6 @@ interface CalendarViewProps {
   onCreateEventOpenChange?: (open: boolean) => void;
   showHolidays: boolean;
   events: Event[];
-  onEventCreate: (eventData: CreateEventData) => Promise<Event>;
-  onEventUpdate: (event: Event) => Promise<void>;
-  onEventDelete: (eventId: string) => Promise<void>;
 }
 
 const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
@@ -48,9 +45,6 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
       onCreateEventOpenChange,
       showHolidays,
       events,
-      onEventCreate,
-      onEventUpdate,
-      onEventDelete,
     },
     ref
   ) => {

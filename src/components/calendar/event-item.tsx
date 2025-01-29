@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { CalendarEvent } from "@/hooks/use-events";
 import { cn } from "@/lib/utils";
 import { PancakeDay } from "./special-days/pancake-day";
 import { StarWarsDay } from "./special-days/star-wars-day";

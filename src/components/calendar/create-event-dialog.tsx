@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
@@ -49,7 +48,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Database } from "@/lib/database.types";
 import { Event } from "@/types/calendar";
 
 // Opdaterer predefinerede kategorier til at matche databasens enum værdier
@@ -85,100 +83,20 @@ const CATEGORIES = [
   { value: "andet", label: "Andet", icon: "📌" },
 ] as const;
 
-// Opdater formSchema med mere detaljeret validering
-const formSchema = z
-  .object({
-    title: z
-      .string()
-      .min(1, "Titel er påkrævet")
-      .max(100, "Titel må max være 100 tegn"),
-    description: z
-      .string()
-      .max(1000, "Beskrivelse må max være 1000 tegn")
-      .optional(),
-    start_date: z.date(),
-    end_date: z.date(),
-    start_time: z.string(),
-    end_time: z.string(),
-    is_all_day: z.boolean(),
-    location: z
-      .string()
-      .max(200, "Lokation må max være 200 tegn")
-      .optional()
-      .transform((val) => val?.trim()),
-    calendar_id: z.string().min(1, "Vælg en kalender"),
-    category: z
-      .enum(
-        [
-          "arbejde",
-          "personlig",
-          "familie",
-          "ferie",
-          "fødselsdag",
-          "møde",
-          "læge",
-          "andet",
-        ],
-        {
-          required_error: "Vælg en kategori",
-        }
-      )
-      .optional(),
-    color: z.string().optional(),
-    invitations: z.array(z.string().email("Ugyldig email adresse")).optional(),
-    repeat: z
-      .enum(["NONE", "DAILY", "WEEKLY", "MONTHLY", "YEARLY"])
-      .default("NONE"),
-    repeat_until: z.date().optional(),
-    repeat_interval: z
-      .number()
-      .min(1, "Interval skal være mindst 1")
-      .max(365, "Interval må max være 365")
-      .default(1),
-    repeat_days: z.array(z.number()).optional(),
-  })
-  .refine(
-    (data) => {
-      if (data.end_date < data.start_date) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: "Slutdato skal være efter startdato",
-      path: ["end_date"],
-    }
-  )
-  .refine(
-    (data) => {
-      if (!data.is_all_day && data.start_time && data.end_time) {
-        if (
-          data.start_date.getTime() === data.end_date.getTime() &&
-          data.end_time <= data.start_time
-        ) {
-          return false;
-        }
-      }
-      return true;
-    },
-    {
-      message: "Sluttidspunkt skal være efter starttidspunkt",
-      path: ["end_time"],
-    }
-  );
-
 interface CreateEventDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  selectedDate?: Date;
-  onEventCreate: (event: Omit<Event, "id" | "userId">) => Promise<void>;
+  defaultDate?: Date;
+  visibleCalendarIds: string[];
+  createEvent: (event: Omit<Event, "id" | "userId">) => Promise<void>;
 }
 
 export function CreateEventDialog({
   isOpen,
   onOpenChange,
-  selectedDate = new Date(),
-  onEventCreate,
+  defaultDate = new Date(),
+  visibleCalendarIds,
+  createEvent,
 }: CreateEventDialogProps) {
   const { toast } = useToast();
   const { supabase } = useSupabase();
@@ -194,8 +112,8 @@ export function CreateEventDialog({
     defaultValues: {
       title: "",
       description: "",
-      start: selectedDate,
-      end: selectedDate,
+      start: defaultDate,
+      end: defaultDate,
       allDay: false,
       color: "#4285F4",
     },
@@ -338,7 +256,7 @@ export function CreateEventDialog({
     try {
       setIsLoading(true);
 
-      await onEventCreate(data);
+      await createEvent(data);
       form.reset();
       onOpenChange(false);
       toast.success("Begivenheden blev oprettet");
