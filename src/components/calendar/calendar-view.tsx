@@ -16,7 +16,6 @@ import { VIEW_OPTIONS } from "@/lib/constants";
 import { useSupabase } from "@/components/providers/supabase-provider";
 import "@/styles/print.css";
 import { Event } from "@/types/calendar";
-import { CreateEventData } from "@/hooks/use-events";
 
 export type CalendarViewType = "day" | "week" | "month" | "year";
 

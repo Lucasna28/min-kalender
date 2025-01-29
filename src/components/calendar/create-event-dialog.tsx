@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -87,7 +86,6 @@ interface CreateEventDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   defaultDate?: Date;
-  visibleCalendarIds: string[];
   createEvent: (event: Omit<Event, "id" | "userId">) => Promise<void>;
 }
 
@@ -95,7 +93,6 @@ export function CreateEventDialog({
   isOpen,
   onOpenChange,
   defaultDate = new Date(),
-  visibleCalendarIds,
   createEvent,
 }: CreateEventDialogProps) {
   const { toast } = useToast();
