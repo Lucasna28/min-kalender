@@ -46,7 +46,6 @@ import { useEvents } from "@/hooks/useEvents";
 
 export default function CalendarPage() {
   const { supabase } = useSupabase();
-  const useEventsResult = useEvents(visibleCalendarIds);
   const [visibleCalendarIds, setVisibleCalendarIds] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedCalendarId, setSelectedCalendarId] = useState<string | null>(
@@ -318,6 +317,8 @@ export default function CalendarPage() {
       toast.error("Der opstod en fejl ved spring over af tutorial");
     }
   };
+
+  const { createEvent, deleteEvent } = useEvents(visibleCalendarIds);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
