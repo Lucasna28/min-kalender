@@ -6,7 +6,6 @@ module.exports = {
     "@typescript-eslint/ban-ts-comment": "off",
     "react-hooks/rules-of-hooks": "off",
     "@typescript-eslint/no-explicit-any": "off",
-    "react-hooks/exhaustive-deps": "off",
     "@typescript-eslint/no-unused-expressions": "off",
     "no-unused-vars": "off",
   },
