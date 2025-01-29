@@ -90,7 +90,7 @@ export function useEvents(visibleCalendarIds: string[]): UseEventsReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase, toast, visibleCalendarIds]);
+  }, [CACHE_DURATION, supabase, visibleCalendarIds]);
 
   // Hent events for den aktuelle måned når komponenten mountes eller når visibleCalendarIds ændres
   useEffect(() => {
@@ -164,17 +164,13 @@ export function useEvents(visibleCalendarIds: string[]): UseEventsReturn {
 
       if (error) throw error;
 
-      // Opdater events state med den opdaterede begivenhed
       setEvents((prev) => prev.map((e) => e.id === event.id ? event : e));
-
-      // Ryd cache for at tvinge en genindlæsning
-      eventCache.current = {};
 
       toast({
         title: "Begivenhed opdateret",
         description: "Din begivenhed er blevet opdateret",
       });
-    } catch (error: unknown) {
+    } catch (error) {
       const err = error as Error | PostgrestError;
       toast({
         title: "Fejl ved opdatering",
@@ -185,7 +181,7 @@ export function useEvents(visibleCalendarIds: string[]): UseEventsReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase, toast]);
+  }, [supabase]);
 
   const deleteEvent = useCallback(async (eventId: string) => {
     try {
@@ -219,7 +215,7 @@ export function useEvents(visibleCalendarIds: string[]): UseEventsReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase, toast]);
+  }, [supabase]);
 
   const refetch = async () => {
     const now = new Date();

@@ -1,14 +1,13 @@
-import { createClient } from '@supabase/supabase-js'
-import { Database } from './database.types'
+import { createClient } from "@supabase/supabase-js";
+import { Database } from "./database.types";
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-  throw new Error('Mangler NEXT_PUBLIC_SUPABASE_URL miljøvariabel')
+  throw new Error("NEXT_PUBLIC_SUPABASE_URL er ikke konfigureret");
 }
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-  throw new Error('Mangler NEXT_PUBLIC_SUPABASE_ANON_KEY miljøvariabel')
+  throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY er ikke konfigureret");
 }
-
 
 export const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -19,7 +18,7 @@ export const supabase = createClient<Database>(
       autoRefreshToken: true,
     },
     db: {
-      schema: 'public'
-    }
-  }
-) 
+      schema: "public",
+    },
+  },
+);

@@ -19,8 +19,7 @@ import {
   AlertTriangle,
   ExternalLink,
 } from "lucide-react";
-import { useSupabase } from "@/components/providers/supabase-provider";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -34,13 +33,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { User as SupabaseUser } from "@supabase/supabase-js";
 import { Event } from "@/types/calendar";
 
 interface ViewEventDialogProps {
   event: Event | null;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
+  onClose: () => void;
   onEdit?: (event: Event) => void;
   onDelete?: (eventId: string) => void;
 }
@@ -75,41 +72,13 @@ const statusColors = {
 
 export function ViewEventDialog({
   event,
-  isOpen,
-  onOpenChange,
+  onClose,
   onEdit,
   onDelete,
 }: ViewEventDialogProps) {
-  const { supabase } = useSupabase();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [owner, setOwner] = useState<SupabaseUser | null>(null);
 
-  useEffect(() => {
-    if (event && isOpen) {
-      const fetchOwner = async () => {
-        setIsLoading(true);
-        try {
-          const { data: ownerData } = await supabase
-            .from("users")
-            .select("*")
-            .eq("id", event.user_id)
-            .single();
-
-          if (ownerData) {
-            setOwner(ownerData);
-          }
-        } catch (error) {
-          console.error("Fejl ved hentning af ejer:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      fetchOwner();
-    }
-  }, [event, isOpen, supabase]);
+  if (!event) return null;
 
   const handleEdit = () => {
     if (event && onEdit) {
@@ -119,15 +88,12 @@ export function ViewEventDialog({
 
   const handleDelete = async () => {
     if (event && onDelete) {
-      setIsDeleting(true);
       try {
         await onDelete(event.id);
         setShowDeleteDialog(false);
-        onOpenChange(false);
+        onClose();
       } catch (error) {
         console.error("Fejl ved sletning af begivenhed:", error);
-      } finally {
-        setIsDeleting(false);
       }
     }
   };
@@ -138,12 +104,10 @@ export function ViewEventDialog({
     return categoryEmojis[normalizedCategory] || categoryEmojis.default;
   };
 
-  if (!event) return null;
-
   return (
     <AnimatePresence>
       {!!event && (
-        <Dialog open={!!event} onOpenChange={onOpenChange}>
+        <Dialog open={!!event} onOpenChange={onClose}>
           <DialogContent
             className={cn(
               "max-w-[95vw] w-full lg:max-w-3xl p-0 overflow-hidden",
@@ -403,7 +367,7 @@ export function ViewEventDialog({
               </motion.div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={onOpenChange}>
+                <Button variant="outline" onClick={onClose}>
                   Luk
                 </Button>
                 {onEdit && (
@@ -438,19 +402,15 @@ export function ViewEventDialog({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              disabled={isDeleting}
-              className="hover:bg-background"
-            >
+            <AlertDialogCancel className="hover:bg-background">
               Annuller
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
-              disabled={isDeleting}
             >
               <Trash2 className="w-4 h-4" />
-              {isDeleting ? "Sletter..." : "Slet begivenhed"}
+              Slet begivenhed
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,7 +39,7 @@ export function NotificationDropdown() {
   const [unreadCount, setUnreadCount] = useState(0);
   const { supabase } = useSupabase();
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -60,7 +60,7 @@ export function NotificationDropdown() {
 
     setNotifications(data || []);
     setUnreadCount(data?.length || 0);
-  };
+  }, [supabase]);
 
   useEffect(() => {
     fetchNotifications();
@@ -91,7 +91,7 @@ export function NotificationDropdown() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase]);
+  }, [supabase, fetchNotifications]);
 
   const markAsRead = async (id: string) => {
     const { error } = await supabase

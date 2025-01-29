@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
@@ -117,7 +117,7 @@ export function CreateEventDialog({
   });
 
   // Tilføj fetchCalendars funktion
-  const fetchCalendars = async () => {
+  const fetchCalendars = useCallback(async () => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -184,7 +184,12 @@ export function CreateEventDialog({
 
     console.log("Alle kalendere med tilladelser:", allCalendars);
     setCalendars(allCalendars);
-  };
+  }, [supabase]);
+
+  // Tilføj dependencies til useEffect
+  useEffect(() => {
+    fetchCalendars();
+  }, [fetchCalendars, supabase]);
 
   // Opdater useEffect til at bruge fetchCalendars
   useEffect(() => {

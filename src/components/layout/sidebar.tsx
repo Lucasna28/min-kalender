@@ -177,12 +177,11 @@ export default function CalendarSidebar({
     router.push("/login");
   };
 
-  // Tilføj nye funktioner til navigation
-  const goToToday = () => {
+  const goToToday = useCallback(() => {
     onDateChange(new Date());
-  };
+  }, [onDateChange]);
 
-  const goToPreviousDate = () => {
+  const goToPreviousDate = useCallback(() => {
     const newDate = new Date(selectedDate);
     switch (view) {
       case "day":
@@ -199,9 +198,9 @@ export default function CalendarSidebar({
         break;
     }
     onDateChange(newDate);
-  };
+  }, [selectedDate, view, onDateChange]);
 
-  const goToNextDate = () => {
+  const goToNextDate = useCallback(() => {
     const newDate = new Date(selectedDate);
     switch (view) {
       case "day":
@@ -218,7 +217,7 @@ export default function CalendarSidebar({
         break;
     }
     onDateChange(newDate);
-  };
+  }, [selectedDate, view, onDateChange]);
 
   useEffect(() => {
     // Opdater tiden til nærmeste minut

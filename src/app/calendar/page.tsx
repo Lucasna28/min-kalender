@@ -240,6 +240,19 @@ export default function CalendarPage() {
     };
   }, [supabase]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel("events-changes")
+      .on("postgres_changes", {}, () => {
+        fetchEvents();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, fetchEvents]);
+
   // Render placeholder under server-side rendering
   if (!mounted) {
     return (

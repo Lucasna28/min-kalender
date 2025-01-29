@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useSupabase } from "@/components/providers/supabase-provider";
 import { format } from "date-fns";
 import { Event } from "@/types/calendar";
+import { toast } from "@/components/ui/use-toast";
+import { PostgrestError } from "supabase";
 
 export type Event = {
   id: string;
@@ -166,9 +168,6 @@ export function useEvents(visibleCalendarIds: string[] = []) {
         return;
       }
 
-      // Hent den aktuelle bruger
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-
       // Konverter datoer og tilføj brugerdata
       const formattedEvents = events.map((event) => ({
         id: event.id,
@@ -281,10 +280,42 @@ export function useEvents(visibleCalendarIds: string[] = []) {
     }
   }, [supabase]);
 
+  const deleteEvent = useCallback(async (eventId: string) => {
+    try {
+      setIsLoading(true);
+
+      const { error } = await supabase
+        .from("events")
+        .delete()
+        .eq("id", eventId);
+
+      if (error) throw error;
+
+      // Fjern den slettede begivenhed fra events state
+      setEvents((prev) => prev.filter((e) => e.id !== eventId));
+
+      toast({
+        title: "Begivenhed slettet",
+        description: "Din begivenhed er blevet slettet",
+      });
+    } catch (error: unknown) {
+      const err = error as Error | PostgrestError;
+      toast({
+        title: "Fejl ved sletning",
+        description: err.message || "Kunne ikke slette begivenhed",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [supabase, toast]);
+
   return {
     events,
     isLoading,
     createEvent,
     refetch: fetchEvents,
+    deleteEvent,
   };
 }

@@ -214,7 +214,7 @@ export function useCalendar(initialView: CalendarViewType = "month") {
   // Hent events når datoen ændres
   useEffect(() => {
     fetchEvents(state.date);
-  }, [state.date]);
+  }, [fetchEvents, state.date]);
 
   return {
     ...state,

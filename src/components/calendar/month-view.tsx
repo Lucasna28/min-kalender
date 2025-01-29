@@ -167,12 +167,12 @@ export function MonthView({
   }, []);
 
   useEffect(() => {
-    if (mounted) {
+    if (date) {
       const year = date.getFullYear();
       const holidays = getDanishHolidays(year);
       setDanishHolidays(holidays);
     }
-  }, [date, mounted]);
+  }, [date]);
 
   if (!mounted) {
     return (
