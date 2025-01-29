@@ -27,14 +27,15 @@ interface DatabaseEvent {
 
 export type CreateEventData = Omit<Event, "id" | "userId">;
 
-interface UseEventsReturn {
+// Tilføj type for updateEvent
+type UseEventsReturn = {
   events: Event[];
   isLoading: boolean;
   createEvent: (eventData: CreateEventData) => Promise<Event>;
   updateEvent: (event: Event) => Promise<void>;
   deleteEvent: (eventId: string) => Promise<void>;
   refetch: () => Promise<void>;
-}
+};
 
 export function useEvents(visibleCalendarIds: string[]): UseEventsReturn {
   const { supabase } = useSupabase();
