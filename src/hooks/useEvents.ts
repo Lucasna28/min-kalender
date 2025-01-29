@@ -28,7 +28,7 @@ interface DatabaseEvent {
 export type CreateEventData = Omit<Event, "id" | "userId">;
 
 // Tilføj type for updateEvent
-type UseEventsReturn = {
+export type UseEventsReturn = {
   events: Event[];
   isLoading: boolean;
   createEvent: (eventData: CreateEventData) => Promise<Event>;
@@ -182,7 +182,7 @@ export function useEvents(visibleCalendarIds: string[]): UseEventsReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase]);
+  }, [supabase, toast]);
 
   const deleteEvent = useCallback(async (eventId: string) => {
     try {
@@ -216,7 +216,7 @@ export function useEvents(visibleCalendarIds: string[]): UseEventsReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase]);
+  }, [supabase, toast]);
 
   const refetch = async () => {
     const now = new Date();

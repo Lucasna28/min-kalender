@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import CalendarView, {
-  CalendarViewType,
-} from "@/components/calendar/calendar-view";
+import CalendarView from "@/components/calendar/calendar-view";
 import CalendarSidebar from "@/components/layout/sidebar";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,12 +42,13 @@ import { TutorialDialog } from "@/components/tutorial/tutorial-dialog";
 import { useReactToPrint } from "react-to-print";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useEvents } from "@/hooks/useEvents";
 
 export default function CalendarPage() {
-  // State hooks
-  const [view, setView] = useState<CalendarViewType>("month");
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const { supabase } = useSupabase();
+  const useEventsResult = useEvents(visibleCalendarIds);
   const [visibleCalendarIds, setVisibleCalendarIds] = useState<string[]>([]);
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedCalendarId, setSelectedCalendarId] = useState<string | null>(
     null
   );
@@ -67,13 +66,10 @@ export default function CalendarPage() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [mounted, setMounted] = useState(false);
 
-  // Refs og andre hooks
   const calendarRef = useRef<HTMLDivElement>(null);
   const { theme, setTheme } = useTheme();
-  const { supabase } = useSupabase();
   const router = useRouter();
 
-  // Print hook
   const handlePrint = useReactToPrint({
     documentTitle: `Kalender - ${format(selectedDate, "MMMM yyyy", {
       locale: da,
@@ -121,7 +117,6 @@ export default function CalendarPage() {
     `,
   });
 
-  // Effects
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -141,7 +136,6 @@ export default function CalendarPage() {
           return;
         }
 
-        // Hent brugerens tutorial status
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("has_completed_tutorial")
@@ -150,7 +144,6 @@ export default function CalendarPage() {
 
         if (profileError) throw profileError;
 
-        // Hvis brugeren ikke har en profil eller ikke har gennemført tutorial
         if (!profile || profile.has_completed_tutorial === null) {
           setShowTutorial(true);
           setTutorialProgress(0);
@@ -169,7 +162,7 @@ export default function CalendarPage() {
     };
 
     checkNewUser();
-  }, [supabase.auth, router]);
+  }, [supabase, router]);
 
   useEffect(() => {
     const fetchUnreadCount = async () => {
@@ -199,7 +192,6 @@ export default function CalendarPage() {
 
     fetchUnreadCount();
 
-    // Subscribe til nye notifikationer
     let channel;
     try {
       channel = supabase
@@ -251,9 +243,8 @@ export default function CalendarPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, fetchEvents]);
+  }, [supabase]);
 
-  // Render placeholder under server-side rendering
   if (!mounted) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -262,7 +253,6 @@ export default function CalendarPage() {
     );
   }
 
-  // Event handlers
   const handleLogout = async () => {
     try {
       setIsLoading(true);
@@ -277,7 +267,6 @@ export default function CalendarPage() {
     }
   };
 
-  // Håndter tutorial completion
   const handleTutorialComplete = async () => {
     try {
       const {
@@ -288,7 +277,6 @@ export default function CalendarPage() {
       if (userError) throw userError;
       if (!user) return;
 
-      // Opdater brugerens tutorial status
       const { error: updateError } = await supabase.from("profiles").upsert({
         id: user.id,
         has_completed_tutorial: true,
@@ -305,7 +293,6 @@ export default function CalendarPage() {
     }
   };
 
-  // Håndter tutorial skip
   const handleTutorialSkip = async () => {
     try {
       const {
@@ -316,7 +303,6 @@ export default function CalendarPage() {
       if (userError) throw userError;
       if (!user) return;
 
-      // Opdater brugerens tutorial status
       const { error: updateError } = await supabase.from("profiles").upsert({
         id: user.id,
         has_completed_tutorial: true,
@@ -354,13 +340,9 @@ export default function CalendarPage() {
         isOpen={isNotificationsOpen}
         onOpenChange={setIsNotificationsOpen}
       />
-      {/* Header */}
       <div className="fixed top-0 left-0 right-0 z-50 flex flex-col bg-background/50 supports-[backdrop-filter]:bg-background/30 backdrop-blur-xl border-b border-border/40 shadow-lg after:absolute after:inset-0 after:bg-gradient-to-b after:from-background/10 after:to-transparent after:pointer-events-none">
-        {/* Top bar */}
         <div className="flex items-center justify-between p-4 mx-auto w-full max-w-[2000px] relative before:absolute before:inset-0 before:bg-gradient-to-r before:from-primary/5 before:via-transparent before:to-primary/5 before:animate-gradient-x">
-          {/* Venstre side */}
           <div className="flex items-center gap-4 sm:ml-80">
-            {/* Mobil burger menu */}
             <Button
               variant="ghost"
               size="icon"
@@ -371,7 +353,6 @@ export default function CalendarPage() {
               <Menu className="h-5 w-5 transition-all duration-300 group-hover:scale-110 relative z-10" />
               <span className="sr-only">Åbn menu</span>
             </Button>
-            {/* Desktop logo */}
             <div className="hidden sm:flex items-center gap-3 px-4 py-2 rounded-xl bg-accent/20 hover:bg-accent/30 transition-all duration-300 hover:scale-105 hover:-rotate-1 group relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-primary/10 before:to-transparent before:translate-x-[-100%] before:group-hover:translate-x-[100%] before:transition-transform before:duration-500">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="relative">
@@ -383,7 +364,6 @@ export default function CalendarPage() {
                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary/50 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
               </h2>
             </div>
-            {/* Mobil titel med dato navigation */}
             <div className="flex items-center gap-2 sm:hidden">
               <Button
                 variant="ghost"
@@ -417,9 +397,7 @@ export default function CalendarPage() {
             </div>
           </div>
 
-          {/* Højre side */}
           <div className="flex items-center gap-3">
-            {/* I dag knap */}
             <Button
               variant="outline"
               size="sm"
@@ -429,7 +407,6 @@ export default function CalendarPage() {
               <Calendar className="h-4 w-4 group-hover:rotate-12 transition-transform duration-300 relative z-10" />
               <span className="relative z-10">I dag</span>
             </Button>
-            {/* Desktop tema toggle */}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -458,7 +435,6 @@ export default function CalendarPage() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            {/* Notifikationer */}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -493,7 +469,6 @@ export default function CalendarPage() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            {/* Opret begivenhed */}
             <Button
               variant="default"
               size="sm"
@@ -528,7 +503,6 @@ export default function CalendarPage() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            {/* Bruger menu */}
             <DropdownMenu>
               <TooltipProvider>
                 <Tooltip>
@@ -681,7 +655,6 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* Overlay til at lukke sidebar på mobil */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-background/60 backdrop-blur-xl z-40 sm:hidden animate-in fade-in-0 duration-300"
@@ -689,7 +662,6 @@ export default function CalendarPage() {
         />
       )}
 
-      {/* Sidebar - skjult på mobil som standard */}
       <div
         className={`
         fixed inset-y-0 left-0 z-50 w-[280px] bg-background border-r
@@ -716,7 +688,6 @@ export default function CalendarPage() {
         />
       </div>
 
-      {/* Hovedindhold */}
       <div className="flex-1 mt-[64px] sm:mt-[64px] print:mt-0">
         <CalendarView
           ref={calendarRef}
