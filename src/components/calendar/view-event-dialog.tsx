@@ -1,12 +1,10 @@
 "use client";
 
-import { CalendarEvent } from "@/hooks/use-events";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
@@ -17,7 +15,6 @@ import {
   MapPin,
   User,
   Users,
-  Edit,
   Trash2,
   AlertTriangle,
   ExternalLink,
@@ -25,7 +22,6 @@ import {
 import { useSupabase } from "@/components/providers/supabase-provider";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,7 +39,8 @@ import { Event } from "@/types/calendar";
 
 interface ViewEventDialogProps {
   event: Event | null;
-  onClose: () => void;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
   onEdit?: (event: Event) => void;
   onDelete?: (eventId: string) => void;
 }
@@ -78,35 +75,62 @@ const statusColors = {
 
 export function ViewEventDialog({
   event,
-  onClose,
+  isOpen,
+  onOpenChange,
   onEdit,
   onDelete,
 }: ViewEventDialogProps) {
-  if (!event) return null;
+  const { supabase } = useSupabase();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [owner, setOwner] = useState<SupabaseUser | null>(null);
+
+  useEffect(() => {
+    if (event && isOpen) {
+      const fetchOwner = async () => {
+        setIsLoading(true);
+        try {
+          const { data: ownerData } = await supabase
+            .from("users")
+            .select("*")
+            .eq("id", event.user_id)
+            .single();
+
+          if (ownerData) {
+            setOwner(ownerData);
+          }
+        } catch (error) {
+          console.error("Fejl ved hentning af ejer:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchOwner();
+    }
+  }, [event, isOpen, supabase]);
 
   const handleEdit = () => {
-    onEdit?.(event);
-  };
-
-  const handleDelete = () => {
-    onDelete?.(event.id);
-  };
-
-  const { supabase } = useSupabase();
-  const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  // Hent den aktuelle bruger når dialogen åbnes
-  useEffect(() => {
-    if (!!event) {
-      supabase.auth.getUser().then(({ data: { user } }) => {
-        setCurrentUser(user);
-      });
+    if (event && onEdit) {
+      onEdit(event);
     }
-  }, [!!event, supabase.auth]);
+  };
 
-  const isOwner = currentUser?.id === event.user_id;
+  const handleDelete = async () => {
+    if (event && onDelete) {
+      setIsDeleting(true);
+      try {
+        await onDelete(event.id);
+        setShowDeleteDialog(false);
+        onOpenChange(false);
+      } catch (error) {
+        console.error("Fejl ved sletning af begivenhed:", error);
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
 
   const getCategoryEmoji = (category: string | undefined) => {
     if (!category) return categoryEmojis.default;
@@ -114,10 +138,12 @@ export function ViewEventDialog({
     return categoryEmojis[normalizedCategory] || categoryEmojis.default;
   };
 
+  if (!event) return null;
+
   return (
     <AnimatePresence>
       {!!event && (
-        <Dialog open={!!event} onOpenChange={onClose}>
+        <Dialog open={!!event} onOpenChange={onOpenChange}>
           <DialogContent
             className={cn(
               "max-w-[95vw] w-full lg:max-w-3xl p-0 overflow-hidden",
@@ -377,7 +403,7 @@ export function ViewEventDialog({
               </motion.div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={onClose}>
+                <Button variant="outline" onClick={onOpenChange}>
                   Luk
                 </Button>
                 {onEdit && (
