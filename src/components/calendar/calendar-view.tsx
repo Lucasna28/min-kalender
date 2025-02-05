@@ -47,6 +47,8 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
     },
     ref
   ) => {
+    console.log("Events modtaget i CalendarView:", events);
+
     const [_isCreateEventOpen, setIsCreateEventOpen] = useState(false);
     const [selectedEventDate, setSelectedEventDate] = useState<Date>(
       new Date()

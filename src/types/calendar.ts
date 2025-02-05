@@ -4,12 +4,16 @@ export interface Event {
   id: string;
   title: string;
   description?: string;
-  start: Date;
-  end: Date;
-  allDay?: boolean;
-  userId: string;
+  start_date: Date;
+  end_date: Date;
+  is_all_day: boolean;
+  user_id: string;
+  calendar_id: string;
   color?: string;
+  location?: string;
 }
+
+export type CreateEventData = Omit<Event, "id" | "user_id">;
 
 export interface CalendarViewProps {
   date: Date;

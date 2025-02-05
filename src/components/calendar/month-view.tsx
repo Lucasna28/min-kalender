@@ -12,10 +12,12 @@ import {
   subDays,
   addDays,
   getDay,
+  isAfter,
+  isBefore,
 } from "date-fns";
 import { da } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import type { CalendarEvent } from "@/hooks/use-events";
+import { CalendarEvent } from "@/hooks/use-events";
 import { ViewEventDialog } from "./view-event-dialog";
 import { EventItem } from "./event-item";
 import { getDanishHolidays, DanishHoliday } from "@/lib/danish-holidays";
@@ -153,6 +155,15 @@ export function MonthView({
   onDateChange,
   showHolidays,
 }: MonthViewProps) {
+  console.log("MonthView render med events:", events);
+
+  useEffect(() => {
+    if (events.length > 0) {
+      console.log("Events modtaget i MonthView:", events);
+      console.log("Første event format:", events[0]);
+    }
+  }, [events]);
+
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
     null
   );
@@ -186,32 +197,40 @@ export function MonthView({
     );
   }
 
-  const getEventsForDay = (day: Date): CalendarEvent[] => {
-    const regularEvents = (events || []).filter((event) =>
-      isSameDay(event.start_date, day)
-    );
+  const getEventsForDay = (day: Date, events: CalendarEvent[]) => {
+    // Almindelige events
+    const regularEvents = events.filter((event) => {
+      if (!event.start_date || !event.end_date) {
+        console.log("Event mangler start_date eller end_date:", event);
+        return false;
+      }
 
+      return (
+        isSameDay(event.start_date, day) ||
+        (isAfter(day, event.start_date) && isBefore(day, event.end_date)) ||
+        isSameDay(event.end_date, day)
+      );
+    });
+
+    // Helligdage
     const holidays = showHolidays
       ? danishHolidays
           .filter((holiday) => isSameDay(holiday.date, day))
-          .map(
-            (holiday) =>
-              ({
-                id: `holiday-${holiday.date.getTime()}-${holiday.title
-                  .toLowerCase()
-                  .replace(/\s+/g, "-")}`,
-                title: holiday.title,
-                start_date: holiday.date,
-                end_date: holiday.date,
-                is_all_day: true,
-                color: "#dc2626",
-                calendar_id: "danish-holidays",
-                user_id: "system",
-                created_at: new Date(),
-                category: "helligdag",
-                description: "Dansk helligdag",
-              } as CalendarEvent)
-          )
+          .map((holiday) => ({
+            id: `holiday-${holiday.date.getTime()}-${holiday.title
+              .toLowerCase()
+              .replace(/\s+/g, "-")}`,
+            title: holiday.title,
+            start_date: holiday.date,
+            end_date: holiday.date,
+            is_all_day: true,
+            color: "#dc2626",
+            calendar_id: "danish-holidays",
+            user_id: "system",
+            created_at: new Date(),
+            category: "helligdag",
+            description: "Dansk helligdag",
+          }))
       : [];
 
     return [...holidays, ...regularEvents];
@@ -257,7 +276,7 @@ export function MonthView({
         }}
       >
         {days.map((day, dayIdx) => {
-          const dayEvents = getEventsForDay(day);
+          const dayEvents = getEventsForDay(day, events);
           const isCurrentMonth = isSameMonth(day, date);
           const weekNumber = getWeekNumber(day);
           const isFirstInWeek = dayIdx % 7 === 0;

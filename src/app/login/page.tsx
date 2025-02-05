@@ -305,6 +305,43 @@ export default function LoginPage() {
         });
 
         router.push("/calendar");
+
+        // I login-håndteringen, efter vellykket login
+        const createDefaultCalendar = async (userId: string) => {
+          const { data: existingCalendars, error: checkError } = await supabase
+            .from("calendars")
+            .select("id")
+            .eq("user_id", userId)
+            .limit(1);
+
+          if (checkError) {
+            console.error(
+              "Fejl ved tjek af eksisterende kalendere:",
+              checkError
+            );
+            return;
+          }
+
+          if (!existingCalendars || existingCalendars.length === 0) {
+            const { error: createError } = await supabase
+              .from("calendars")
+              .insert({
+                name: "Min kalender",
+                description: "Min personlige kalender",
+                color: "#4285f4",
+                type: "personal",
+                is_visible: true,
+                user_id: userId,
+              });
+
+            if (createError) {
+              console.error(
+                "Fejl ved oprettelse af standardkalender:",
+                createError
+              );
+            }
+          }
+        };
       }
     } catch (error) {
       console.error("Auth error:", error);

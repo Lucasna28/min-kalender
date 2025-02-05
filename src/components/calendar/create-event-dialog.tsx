@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +48,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Event } from "@/types/calendar";
+import { z } from "zod";
+import { CalendarEvent } from "@/hooks/use-events";
 
 // Opdaterer predefinerede kategorier til at matche databasens enum værdier
 const PREDEFINED_CATEGORIES = [
@@ -95,7 +97,6 @@ export function CreateEventDialog({
   defaultDate = new Date(),
   createEvent,
 }: CreateEventDialogProps) {
-  const { toast } = useToast();
   const { supabase } = useSupabase();
   const [calendars, setCalendars] = useState<
     Array<{ id: string; name: string; user_id: string; permission: string }>
@@ -264,9 +265,10 @@ export function CreateEventDialog({
       toast.success("Begivenheden blev oprettet");
     } catch (error) {
       console.error("Fejl ved oprettelse af begivenhed:", error);
-      toast.error("Der skete en fejl ved oprettelse af begivenheden");
+      toast.error("Der opstod en fejl ved oprettelse af begivenheden");
     } finally {
       setIsLoading(false);
+      onOpenChange(false);
     }
   };
 

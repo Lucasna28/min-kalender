@@ -23,8 +23,8 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="dark"
+          enableSystem={false}
           disableTransitionOnChange
         >
           <SupabaseProvider>
@@ -34,7 +34,7 @@ export default function RootLayout({
               position="bottom-right"
               duration={4000}
               closeButton
-              theme="system"
+              theme="dark"
               className="dark:bg-gray-800 dark:text-white"
             />
           </SupabaseProvider>

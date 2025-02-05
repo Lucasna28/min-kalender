@@ -42,13 +42,13 @@ import { TutorialDialog } from "@/components/tutorial/tutorial-dialog";
 import { useReactToPrint } from "react-to-print";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useEvents } from "@/hooks/useEvents";
+import { useEvents } from "@/hooks/use-events";
 import { CalendarViewType } from "@/components/calendar/calendar-view";
 
 export default function CalendarPage() {
-  const { supabase } = useSupabase();
+  const { supabase, session } = useSupabase();
   const [visibleCalendarIds, setVisibleCalendarIds] = useState<string[]>([]);
-  const { createEvent, deleteEvent } = useEvents(visibleCalendarIds);
+  const { events, createEvent, deleteEvent } = useEvents(visibleCalendarIds);
   const [view, setView] = useState<CalendarViewType>("month");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedCalendarId, setSelectedCalendarId] = useState<string | null>(
@@ -235,17 +235,82 @@ export default function CalendarPage() {
   }, [supabase]);
 
   useEffect(() => {
-    const channel = supabase
-      .channel("events-changes")
-      .on("postgres_changes", {}, () => {
-        fetchEvents();
-      })
-      .subscribe();
+    const fetchCalendars = async () => {
+      if (!session?.user?.id) {
+        console.log("Ingen bruger session");
+        return;
+      }
 
-    return () => {
-      supabase.removeChannel(channel);
+      try {
+        console.log("Henter kalendere for bruger:", session.user.id);
+
+        // Hent både brugerens egne kalendere og delte kalendere
+        const [ownCalendarsResponse, sharedCalendarsResponse] =
+          await Promise.all([
+            // Egne kalendere
+            supabase
+              .from("calendars")
+              .select("*")
+              .eq("user_id", session.user.id),
+
+            // Delte kalendere
+            supabase
+              .from("calendar_shares")
+              .select(
+                `
+              calendar_id,
+              calendars (*)
+            `
+              )
+              .eq("user_id", session.user.id)
+              .eq("status", "accepted"),
+          ]);
+
+        if (ownCalendarsResponse.error) throw ownCalendarsResponse.error;
+        if (sharedCalendarsResponse.error) throw sharedCalendarsResponse.error;
+
+        const ownCalendars = ownCalendarsResponse.data || [];
+        const sharedCalendars =
+          sharedCalendarsResponse.data?.map((share) => share.calendars) || [];
+
+        const allCalendars = [...ownCalendars, ...sharedCalendars];
+        console.log("Alle tilgængelige kalendere:", allCalendars);
+
+        if (!allCalendars.length) {
+          // Opret standardkalender hvis ingen findes
+          const { data: newCalendar, error: createError } = await supabase
+            .from("calendars")
+            .insert({
+              name: "Min kalender",
+              description: "Min personlige kalender",
+              color: "#4285f4",
+              type: "personal",
+              is_visible: true,
+              user_id: session.user.id,
+            })
+            .select()
+            .single();
+
+          if (createError) throw createError;
+
+          console.log("Oprettede standardkalender:", newCalendar);
+          setVisibleCalendarIds([newCalendar.id]);
+        } else {
+          // Sæt synlige kalendere
+          const visibleIds = allCalendars
+            .filter((cal) => cal.is_visible)
+            .map((cal) => cal.id);
+
+          console.log("Sætter synlige kalender IDs:", visibleIds);
+          setVisibleCalendarIds(visibleIds);
+        }
+      } catch (error) {
+        console.error("Fejl ved hentning/oprettelse af kalendere:", error);
+      }
     };
-  }, [supabase]);
+
+    fetchCalendars();
+  }, [supabase, session?.user?.id]);
 
   if (!mounted) {
     return (
@@ -702,6 +767,7 @@ export default function CalendarPage() {
           isCreateEventOpen={isCreateEventOpen}
           onCreateEventOpenChange={setIsCreateEventOpen}
           showHolidays={showHolidays}
+          events={events}
         />
       </div>
     </div>

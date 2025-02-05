@@ -33,12 +33,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Event } from "@/types/calendar";
+import { CalendarEvent } from "@/hooks/use-events";
 
 interface ViewEventDialogProps {
-  event: Event | null;
+  event: CalendarEvent | null;
   onClose: () => void;
-  onEdit?: (event: Event) => void;
+  onEdit?: (event: CalendarEvent) => void;
   onDelete?: (eventId: string) => void;
 }
 
