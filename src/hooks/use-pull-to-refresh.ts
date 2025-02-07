@@ -1,30 +1,42 @@
-import { useEffect } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
 
 export function usePullToRefresh(onRefresh: () => Promise<void>) {
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
     useEffect(() => {
-        let touchStart: number | null = null;
-        let touchEnd: number | null = null;
+        let startY = 0;
+        let isPulling = false;
+        const THRESHOLD = 150;
 
         const handleTouchStart = (e: TouchEvent) => {
-            touchStart = e.targetTouches[0].clientY;
-        };
-
-        const handleTouchMove = (e: TouchEvent) => {
-            touchEnd = e.targetTouches[0].clientY;
-        };
-
-        const handleTouchEnd = async () => {
-            if (!touchStart || !touchEnd) return;
-
-            const distance = touchEnd - touchStart;
-            const isTop = window.scrollY === 0;
-
-            if (distance > 100 && isTop) {
-                await onRefresh();
+            // Kun tillad pull-to-refresh når vi er på toppen
+            if (window.scrollY === 0) {
+                startY = e.touches[0].clientY;
+                isPulling = true;
             }
+        };
 
-            touchStart = null;
-            touchEnd = null;
+        const handleTouchMove = async (e: TouchEvent) => {
+            if (!isPulling) return;
+
+            const y = e.touches[0].clientY;
+            const delta = y - startY;
+
+            if (delta > THRESHOLD && !isRefreshing) {
+                setIsRefreshing(true);
+                try {
+                    await onRefresh();
+                } finally {
+                    setIsRefreshing(false);
+                }
+                isPulling = false;
+            }
+        };
+
+        const handleTouchEnd = () => {
+            isPulling = false;
         };
 
         document.addEventListener("touchstart", handleTouchStart);
@@ -36,5 +48,7 @@ export function usePullToRefresh(onRefresh: () => Promise<void>) {
             document.removeEventListener("touchmove", handleTouchMove);
             document.removeEventListener("touchend", handleTouchEnd);
         };
-    }, [onRefresh]);
+    }, [onRefresh, isRefreshing]);
+
+    return isRefreshing;
 }

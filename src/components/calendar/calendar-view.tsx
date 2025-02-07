@@ -7,7 +7,7 @@ import { DayView } from "./day-view";
 import { YearView } from "./year-view";
 import { useEvents } from "@/hooks/use-events";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { CreateEventDialog } from "./create-event-dialog";
 import { cn } from "@/lib/utils";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -16,6 +16,8 @@ import { VIEW_OPTIONS } from "@/lib/constants";
 import { useSupabase } from "@/components/providers/supabase-provider";
 import "@/styles/print.css";
 import { Event } from "@/types/calendar";
+import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
+import { motion, AnimatePresence } from "framer-motion";
 
 export type CalendarViewType = "day" | "week" | "month" | "year";
 
@@ -188,6 +190,12 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
       toast.success("Opret ny begivenhed");
     });
 
+    const handleRefresh = async () => {
+      await refetch();
+    };
+
+    const isRefreshing = usePullToRefresh(handleRefresh);
+
     // Render den aktuelle view komponent
     const CurrentView =
       view === "day"
@@ -199,7 +207,24 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
         : YearView;
 
     return (
-      <div ref={ref} className="flex flex-col h-full">
+      <div ref={ref} className="flex flex-col h-full relative">
+        {/* Loading indikator */}
+        <AnimatePresence>
+          {isRefreshing && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="absolute top-0 left-0 right-0 flex justify-center py-2 z-50"
+            >
+              <div className="bg-primary text-primary-foreground px-4 py-1.5 rounded-full flex items-center gap-2 shadow-lg">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Opdaterer...</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
             <Button

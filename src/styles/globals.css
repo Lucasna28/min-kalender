@@ -46,6 +46,9 @@
     overscroll-behavior-x: none;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y pinch-zoom;
+
+    /* Pull-to-refresh styling */
+    overscroll-behavior-y: contain;
   }
 
   /* Deaktiver pull-to-refresh */
@@ -67,5 +70,12 @@
     max-width: 100vw;
     width: 100vw;
     overflow-x: hidden;
+  }
+
+  @media (display-mode: standalone) {
+    body {
+      /* Tillad bounce effekt i toppen for pull-to-refresh */
+      overscroll-behavior-y: none;
+    }
   }
 }
