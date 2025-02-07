@@ -26,7 +26,12 @@ export default function ProtectedLayout({
   };
 
   return (
-    <div className="min-h-screen">
+    <div
+      className={cn(
+        "min-h-screen",
+        isSidebarOpen && "lg:pl-72 overflow-hidden lg:overflow-auto"
+      )}
+    >
       <SidebarContainer
         isOpen={isSidebarOpen}
         onOpenChange={handleSidebarChange}

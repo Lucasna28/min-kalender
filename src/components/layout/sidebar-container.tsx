@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import CalendarSidebar from "@/components/layout/sidebar";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface SidebarContainerProps {
   isOpen: boolean;
@@ -28,12 +28,24 @@ export function SidebarContainer({
 
   return (
     <>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => onOpenChange(false)}
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+
       <aside
         role="complementary"
         aria-label="Kalender navigation"
         className={cn(
           "fixed inset-y-0 left-0",
-          "w-[85vw] md:w-72 bg-muted/50 backdrop-blur-xl border-r",
+          "w-[85vw] md:w-72 bg-background border-r",
           "transform transition-transform duration-300 ease-in-out",
           "z-50 touch-manipulation",
           "shadow-lg",
@@ -58,19 +70,6 @@ export function SidebarContainer({
           />
         </nav>
       </aside>
-
-      {/* Forbedret overlay med touch feedback */}
-      {isOpen && (
-        <motion.div
-          role="presentation"
-          aria-hidden="true"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
-          onClick={() => onOpenChange(false)}
-        />
-      )}
     </>
   );
 }

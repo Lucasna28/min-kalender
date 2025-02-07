@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Calendar as CalendarIcon,
@@ -42,6 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { da } from "date-fns/locale";
+import { useClickOutside } from "@/hooks/use-click-outside";
 
 interface Calendar {
   id: string;
@@ -102,6 +103,17 @@ export default function CalendarSidebar({
   const router = useRouter();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [printView, setPrintView] = useState<"day" | "week" | "month">("month");
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  useClickOutside(
+    sidebarRef,
+    () => {
+      if (isOpen) {
+        onOpenChange(false);
+      }
+    },
+    isOpen
+  );
 
   useEffect(() => {
     const getUserEmail = async () => {
@@ -275,7 +287,7 @@ export default function CalendarSidebar({
   };
 
   return (
-    <>
+    <div ref={sidebarRef} className="h-full">
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -652,6 +664,6 @@ export default function CalendarSidebar({
           onCalendarUpdated={fetchCalendars}
         />
       )}
-    </>
+    </div>
   );
 }
