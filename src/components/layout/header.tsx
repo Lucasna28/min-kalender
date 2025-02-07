@@ -30,7 +30,7 @@ export function Header({
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="p-2 sm:p-3 hover:bg-accent rounded-full -ml-1 sm:-ml-2 touch-manipulation"
+          className="p-2 sm:p-3 hover:bg-accent rounded-full -ml-1 sm:-ml-2 touch-manipulation max-[824px]:block hidden"
           onClick={onOpenSidebar}
         >
           <Menu className="h-5 w-5 sm:h-6 sm:w-6" />

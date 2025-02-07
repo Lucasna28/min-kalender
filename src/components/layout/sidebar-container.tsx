@@ -35,7 +35,7 @@ export function SidebarContainer({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => onOpenChange(false)}
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 [824px]:hidden"
           />
         )}
       </AnimatePresence>
@@ -49,7 +49,8 @@ export function SidebarContainer({
           "transform transition-transform duration-300 ease-in-out",
           "z-50 touch-manipulation",
           "shadow-lg",
-          isOpen ? "translate-x-0" : "-translate-x-full"
+          isOpen ? "translate-x-0" : "-translate-x-full",
+          "[824px]:translate-x-0"
         )}
       >
         <nav role="navigation" aria-label="Kalender navigation">

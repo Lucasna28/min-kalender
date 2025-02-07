@@ -281,17 +281,19 @@ export function MonthView({
   const numberOfWeeks = Math.ceil(days.length / 7);
 
   return (
-    <div className="flex flex-col h-full bg-background print:bg-white max-w-full">
-      {/* Ugedage header - gør mere kompakt */}
-      <div className="grid grid-cols-7 text-[10px] sm:text-sm font-medium text-muted-foreground border-b border-border print:border-gray-200">
+    <div className="flex flex-col h-full bg-background print:bg-white">
+      {/* Ugedage header - mere kompakt på små skærme */}
+      <div className="grid grid-cols-7 text-[8px] sm:text-xs font-medium text-muted-foreground border-b border-border print:border-gray-200">
         {["M", "Ti", "O", "To", "F", "L", "S"].map((day) => (
           <div
             key={day}
             className={cn(
-              "h-8 sm:h-10 flex items-center justify-center",
+              "h-6 sm:h-8 flex items-center justify-center",
               "border-r border-border print:border-gray-200",
               "print:text-gray-600 print:font-semibold print:text-base",
-              "w-full min-w-[2rem] px-0.5" // Sikrer minimum bredde
+              // Responsiv styling
+              "min-w-[40px] sm:min-w-0", // Fast minimumsbredde på mobile
+              "px-0.5 sm:px-2"
             )}
           >
             {day}
@@ -299,18 +301,17 @@ export function MonthView({
         ))}
       </div>
 
-      {/* Kalendergrid - sikrer synlighed af alle dage */}
+      {/* Kalendergrid - optimeret for alle skærmstørrelser */}
       <div
-        className="grid grid-cols-7 flex-1 print:gap-0 overflow-hidden w-full"
+        className="grid grid-cols-7 flex-1 print:gap-0 overflow-x-auto sm:overflow-x-visible"
         style={{
-          gridTemplateRows: `repeat(${numberOfWeeks}, minmax(70px, 1fr))`,
+          gridTemplateRows: `repeat(${numberOfWeeks}, minmax(80px, 1fr))`,
+          gridTemplateColumns: "repeat(7, minmax(40px, 1fr))", // Minimum 40px pr kolonne
         }}
       >
         {days.map((day, dayIdx) => {
           const dayEvents = getEventsForDay(day, events);
           const isCurrentMonth = isSameMonth(day, date);
-          const weekNumber = getWeekNumber(day);
-          const isFirstInWeek = dayIdx % 7 === 0;
 
           return (
             <div
@@ -318,29 +319,28 @@ export function MonthView({
               className={cn(
                 "border-r border-b border-border print:border-gray-200",
                 "relative transition-colors duration-200",
-                "min-h-[70px] sm:min-h-[120px]",
-                "w-full min-w-[2rem]", // Sikrer minimum bredde
-                "p-0.5",
+                // Responsiv styling
+                "min-h-[80px]", // Fast minimumshøjde
+                "p-0.5 sm:p-2",
                 !isCurrentMonth && "bg-muted/30 print:bg-gray-50",
                 isToday(day) && "bg-primary/5 print:bg-transparent",
                 "hover:bg-accent/50 cursor-pointer group print:hover:bg-transparent",
-                // Kompakt padding for ugenummer
-                dayIdx % 7 === 0 && "pl-3 sm:pl-0.5"
+                dayIdx % 7 === 0 && "pl-2 sm:pl-3"
               )}
               onClick={() => onDateChange(day, { shouldOpenCreateEvent: true })}
             >
-              {/* Ugenummer - meget kompakt */}
+              {/* Ugenummer - mere synlig på små skærme */}
               {dayIdx % 7 === 0 && (
-                <div className="absolute left-0.5 top-0.5 text-[8px] sm:text-xs text-muted-foreground/70">
+                <div className="absolute left-0.5 top-0.5 text-[7px] sm:text-[8px] text-muted-foreground/70 font-medium">
                   {getWeekNumber(day)}
                 </div>
               )}
 
-              {/* Dato - meget kompakt */}
+              {/* Dato - forbedret læsbarhed */}
               <div
                 className={cn(
-                  "text-[10px] sm:text-sm font-medium flex items-center justify-end",
-                  "h-4 sm:h-6",
+                  "text-[10px] sm:text-xs font-medium flex items-center justify-end",
+                  "h-4 sm:h-5",
                   !isCurrentMonth && "text-muted-foreground/50 italic",
                   isToday(day) && "text-primary font-bold"
                 )}
@@ -348,22 +348,39 @@ export function MonthView({
                 {format(day, "d")}
               </div>
 
-              {/* Events - meget kompakt */}
-              <div className="space-y-0.5">
-                {dayEvents.slice(0, 2).map((event) => (
+              {/* Events container - bedre spacing og læsbarhed */}
+              <div className="space-y-1 sm:space-y-1.5 mt-1 sm:mt-2">
+                {dayEvents.slice(0, 3).map((event) => (
                   <EventItem
                     key={event.id}
                     event={event}
-                    className="text-[8px] leading-tight sm:text-xs truncate py-0.5"
+                    className={cn(
+                      // Større tekst og bedre padding
+                      "text-[8px] sm:text-[10px] leading-tight",
+                      "py-1 sm:py-1.5",
+                      "px-1.5 sm:px-2",
+                      "rounded",
+                      // Forbedret hover effekt
+                      "hover:brightness-90 transition-all",
+                      // Bedre kontrast for tekst
+                      "font-medium"
+                    )}
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedEvent(event);
                     }}
                   />
                 ))}
-                {dayEvents.length > 2 && (
-                  <div className="text-[7px] sm:text-xs text-muted-foreground">
-                    +{dayEvents.length - 2}
+                {dayEvents.length > 3 && (
+                  <div
+                    className={cn(
+                      "text-[8px] sm:text-[10px]",
+                      "font-medium text-muted-foreground",
+                      "px-1.5 py-0.5",
+                      "hover:bg-accent/50 rounded cursor-pointer"
+                    )}
+                  >
+                    +{dayEvents.length - 3} mere
                   </div>
                 )}
               </div>

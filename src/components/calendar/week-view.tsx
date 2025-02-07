@@ -184,13 +184,14 @@ export function WeekView({ date, events, onDateChange }: WeekViewProps) {
               onClick={() => onDateChange(day)}
               className={cn(
                 "p-2 flex flex-col items-center touch-manipulation",
+                "w-[calc((100vw-1rem)/7)] sm:w-auto",
                 isSameDay(day, new Date()) && "text-primary font-bold"
               )}
             >
-              <span className="text-xs">
+              <span className="text-[8px] sm:text-xs">
                 {format(day, "EEE", { locale: da })}
               </span>
-              <span className="text-base">{format(day, "d")}</span>
+              <span className="text-xs sm:text-base">{format(day, "d")}</span>
             </motion.button>
           ))}
         </div>
@@ -200,6 +201,10 @@ export function WeekView({ date, events, onDateChange }: WeekViewProps) {
       <div
         ref={timeGridRef}
         className="flex-1 grid grid-cols-8 overflow-y-auto relative bg-background/95 scroll-smooth touch-pan-y overscroll-none"
+        style={{
+          gridTemplateColumns:
+            "auto repeat(7, minmax(calc((100vw - 80px - 1rem)/7), 1fr))",
+        }}
       >
         {/* Tidslinje */}
         <div className="border-r border-border print:hidden">

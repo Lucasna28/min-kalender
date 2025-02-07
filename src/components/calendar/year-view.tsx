@@ -127,7 +127,7 @@ export function YearView({ date, events, onDateChange }: YearViewProps) {
   };
 
   return (
-    <div className="grid grid-cols-4 gap-4 p-4 bg-background">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4 bg-background">
       {months.map((month) => {
         const monthStart = startOfMonth(month);
         const monthEnd = endOfMonth(month);
@@ -163,37 +163,42 @@ export function YearView({ date, events, onDateChange }: YearViewProps) {
             {/* Ugedage */}
             <div className="grid grid-cols-7 text-[0.6rem] text-muted-foreground mb-1">
               {["M", "T", "O", "T", "F", "L", "S"].map((day) => (
-                <div key={day} className="text-center">
+                <div
+                  key={day}
+                  className={cn("text-center", "w-[calc((100%-1rem)/7)]")}
+                >
                   {day}
                 </div>
               ))}
             </div>
 
             {/* Dage */}
-            <div
-              className="grid grid-cols-7 gap-[2px]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {emptyDays.map((_, i) => (
-                <div key={`empty-${i}`} className="aspect-square" />
+            <div className="grid grid-cols-7 gap-0.5">
+              {emptyDays.map((_, index) => (
+                <div
+                  key={`empty-${index}`}
+                  className="aspect-square w-[calc((100%-1rem)/7)]"
+                />
               ))}
               {daysInMonth.map((day) => {
                 const eventTypes = getEventsByType(day);
                 const hasEvents = eventTypes.length > 0;
 
                 return (
-                  <div
+                  <motion.div
                     key={day.toISOString()}
                     className={cn(
-                      "aspect-square text-[0.7rem] relative",
-                      "flex items-center justify-center",
-                      isToday(day) && "bg-primary/10 rounded-full font-bold",
+                      "aspect-square flex items-center justify-center text-[0.6rem]",
+                      "w-[calc((100%-1rem)/7)]",
+                      isSameMonth(day, new Date()) &&
+                        isSameDay(day, new Date()) &&
+                        "bg-primary text-primary-foreground rounded-full",
                       hasEvents && "font-medium",
                       "hover:bg-accent/50 cursor-pointer"
                     )}
                     onClick={(e) => handleDayClick(day, e)}
                   >
-                    {format(day, "d.")}
+                    {format(day, "d")}
                     {hasEvents && (
                       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-[2px]">
                         {eventTypes.map((eventType) => (
@@ -206,7 +211,7 @@ export function YearView({ date, events, onDateChange }: YearViewProps) {
                         ))}
                       </div>
                     )}
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>

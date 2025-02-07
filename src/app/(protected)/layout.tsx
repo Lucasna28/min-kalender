@@ -30,7 +30,7 @@ export default function ProtectedLayout({
       className={cn(
         "min-h-screen",
         "max-w-screen overflow-x-hidden",
-        isSidebarOpen && "lg:pl-72 overflow-hidden lg:overflow-auto"
+        "[824px]:pl-72"
       )}
     >
       <SidebarContainer
@@ -40,7 +40,7 @@ export default function ProtectedLayout({
       <section
         className={cn(
           "transition-all duration-300 ease-in-out",
-          isSidebarOpen ? "lg:pl-72" : "lg:pl-0"
+          "[824px]:pl-72"
         )}
       >
         <Header onOpenSidebar={() => handleSidebarChange(true)} />
