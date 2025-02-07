@@ -166,13 +166,45 @@ export function DayView({
         </div>
       </motion.div>
 
+      {/* Heldagsbegivenheder sektion */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
+        {/* Dato header */}
+        <div className="p-2 flex flex-col items-center border-b border-border/50">
+          <span className="text-[8px] xs:text-xs text-muted-foreground">
+            {format(date, "EEEE", { locale: da })}
+          </span>
+          <span className="text-xs xs:text-base font-medium">
+            {format(date, "d. MMMM", { locale: da })}
+          </span>
+        </div>
+
+        {/* Heldagsbegivenheder */}
+        <div className="p-1 min-h-[40px] max-h-[80px] overflow-y-auto">
+          {getAllDayEvents().map((event) => (
+            <EventItem
+              key={event.id}
+              event={event}
+              className={cn(
+                "text-[8px] xs:text-xs truncate rounded-sm mb-1",
+                "px-1.5 py-1 cursor-pointer",
+                "hover:brightness-90 transition-all"
+              )}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedEvent(event);
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
       {/* Forbedret touch-venlig tidsgrid */}
       <div
         ref={timeGridRef}
         className="flex-1 grid grid-cols-[80px_1fr] overflow-y-auto relative bg-background/95 scroll-smooth touch-pan-y"
       >
         {/* Tidslinje */}
-        <div className="border-r border-border print:hidden">
+        <div className="border-r border-border print:hidden mt-10">
           {hours.map((hour) => (
             <div
               key={hour}
@@ -186,7 +218,7 @@ export function DayView({
         </div>
 
         {/* Events grid */}
-        <div className="relative">
+        <div className="relative mt-10">
           {hours.map((hour) => (
             <div
               key={hour}

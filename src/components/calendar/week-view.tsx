@@ -5,21 +5,17 @@ import {
   format,
   startOfWeek,
   isToday,
-  startOfDay,
-  endOfDay,
-  isWithinInterval,
   isSameDay,
   addDays,
-  isAfter,
-  isBefore,
   subDays,
+  isSameMonth,
 } from "date-fns";
 import { da } from "date-fns/locale";
 import type { CalendarEvent } from "@/hooks/use-events";
 import { ViewEventDialog } from "./view-event-dialog";
 import { EventItem } from "./event-item";
 import { motion, AnimatePresence } from "framer-motion";
-import { getDanishHolidays, DanishHoliday } from "@/lib/danish-holidays";
+import { getDanishHolidays, type DanishHoliday } from "@/lib/danish-holidays";
 import { getWeekNumber } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -104,49 +100,38 @@ export function WeekView({ date, events, onDateChange }: WeekViewProps) {
   }, [date]);
 
   const getEventsForDay = (day: Date) => {
-    return events.filter((event) => {
-      if (event.is_all_day) return false; // Ignorer heldagsbegivenheder
-      const eventStart = new Date(event.start_date);
-      const eventEnd = new Date(event.end_date);
-
-      return (
-        (isSameDay(eventStart, day) || isAfter(day, eventStart)) &&
-        (isSameDay(eventEnd, day) || isBefore(day, eventEnd))
-      );
-    });
-  };
-
-  const getAllDayEvents = (day: Date) => {
+    // Almindelige events (ikke heldags)
     const regularEvents = events.filter((event) => {
-      if (!event.is_all_day) return false;
-      const eventStart = new Date(event.start_date);
-      const eventEnd = new Date(event.end_date);
-      return isWithinInterval(day, {
-        start: startOfDay(eventStart),
-        end: endOfDay(eventEnd),
-      });
+      if (event.is_all_day || event.calendar_id === "danish-holidays")
+        return false;
+      return isSameDay(day, new Date(event.start_date));
+    });
+
+    // Heldagsbegivenheder og helligdage
+    const allDayEvents = events.filter((event) => {
+      if (!event.is_all_day && event.calendar_id !== "danish-holidays")
+        return false;
+      return isSameDay(day, new Date(event.start_date));
     });
 
     // Find danske helligdage for denne dag
     const holidays = danishHolidays
       .filter((holiday) => isSameDay(holiday.date, day))
-      .map(
-        (holiday) =>
-          ({
-            id: `holiday-${holiday.date.getTime()}`,
-            title: holiday.title,
-            start_date: holiday.date,
-            end_date: holiday.date,
-            is_all_day: true,
-            color: holiday.color,
-            calendar_id: "danish-holidays",
-            user_id: "system",
-            created_at: new Date(),
-            category: "andet",
-          } as CalendarEvent)
-      );
+      .map((holiday) => ({
+        id: `holiday-${holiday.date.getTime()}`,
+        title: holiday.title,
+        start_date: holiday.date,
+        end_date: holiday.date,
+        is_all_day: true,
+        calendar_id: "danish-holidays",
+        user_id: "system",
+        created_at: new Date(),
+      }));
 
-    return [...holidays, ...regularEvents];
+    return {
+      regularEvents,
+      allDayEvents: [...holidays, ...allDayEvents],
+    };
   };
 
   return (
@@ -175,118 +160,179 @@ export function WeekView({ date, events, onDateChange }: WeekViewProps) {
           </button>
         </div>
 
-        {/* Ugedage header - mere touch-venlig */}
-        <div className="grid grid-cols-7 text-sm font-medium text-muted-foreground">
-          {weekDays.map((day) => (
-            <motion.button
-              key={day.toISOString()}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => onDateChange(day)}
-              className={cn(
-                "p-2 flex flex-col items-center touch-manipulation",
-                "w-[calc((100vw-1rem)/7)] sm:w-auto",
-                isSameDay(day, new Date()) && "text-primary font-bold"
-              )}
-            >
-              <span className="text-[8px] sm:text-xs">
-                {format(day, "EEE", { locale: da })}
-              </span>
-              <span className="text-xs sm:text-base">{format(day, "d")}</span>
-            </motion.button>
-          ))}
+        {/* Ugedage header med heldagsbegivenheder */}
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
+          {/* Ugedage header */}
+          <div className="grid grid-cols-7 text-sm font-medium text-muted-foreground">
+            {weekDays.map((day) => (
+              <motion.div
+                key={day.toISOString()}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => onDateChange(day)}
+                className={cn(
+                  "p-2 flex flex-col items-center",
+                  "touch-manipulation border-r border-border/50",
+                  !isSameMonth(day, date) && "bg-muted/30 print:bg-gray-50",
+                  isToday(day) && "bg-primary/5 print:bg-transparent",
+                  "hover:bg-accent/50 cursor-pointer group print:hover:bg-transparent"
+                )}
+              >
+                <span className="text-[8px] xs:text-xs">
+                  {format(day, "EEE", { locale: da })}
+                </span>
+                <span className="text-xs xs:text-base">{format(day, "d")}</span>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Heldagsbegivenheder sektion */}
+          <div className="border-t border-border/50">
+            <div className="grid grid-cols-7">
+              {weekDays.map((day) => {
+                const { allDayEvents } = getEventsForDay(day);
+
+                return (
+                  <div
+                    key={day.toISOString()}
+                    className={cn(
+                      "p-1 border-r border-border/50",
+                      "min-h-[40px] max-h-[80px] overflow-y-auto",
+                      !isSameMonth(day, date) && "bg-muted/30 print:bg-gray-50",
+                      isToday(day) && "bg-primary/5 print:bg-transparent",
+                      "hover:bg-accent/50 cursor-pointer group print:hover:bg-transparent"
+                    )}
+                    onClick={() => onDateChange(day)}
+                  >
+                    {allDayEvents.map((event) => (
+                      <EventItem
+                        key={event.id}
+                        event={event}
+                        className={cn(
+                          "text-[8px] xs:text-xs truncate rounded-sm mb-1",
+                          "px-1.5 py-1 cursor-pointer",
+                          "hover:brightness-90 transition-all"
+                        )}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedEvent(event);
+                        }}
+                      />
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </motion.div>
 
-      {/* Forbedret touch-venlig tidsgrid */}
+      {/* Tidsgrid */}
       <div
         ref={timeGridRef}
-        className="flex-1 grid grid-cols-8 overflow-y-auto relative bg-background/95 scroll-smooth touch-pan-y overscroll-none"
+        className="flex-1 grid overflow-y-auto relative bg-background/95 scroll-smooth touch-pan-y"
         style={{
-          gridTemplateColumns:
-            "auto repeat(7, minmax(calc((100vw - 80px - 1rem)/7), 1fr))",
+          display: "grid",
+          gridTemplateColumns: "60px repeat(7, 1fr)",
+          width: "100%",
+          height: "calc(100vh - 200px)", // Adjust based on header height
         }}
       >
         {/* Tidslinje */}
-        <div className="border-r border-border print:hidden">
+        <div className="border-r border-border print:hidden sticky left-0 bg-background z-10">
           {hours.map((hour) => (
             <div
               key={hour}
-              className="h-20 border-b border-border relative group"
+              className="h-20 border-b border-border relative flex items-center justify-end"
             >
-              <div className="absolute -top-3 right-2 text-sm text-muted-foreground flex items-center gap-1">
-                <span>{format(new Date().setHours(hour, 0), "HH:mm")}</span>
+              <div className="px-2 text-xs text-muted-foreground">
+                {format(new Date().setHours(hour, 0), "HH:mm")}
               </div>
             </div>
           ))}
         </div>
 
         {/* Dage med events */}
-        {weekDays.map((day) => (
-          <div
-            key={day.toISOString()}
-            className={cn(
-              "relative border-r border-border print:border-gray-200",
-              isSameDay(day, new Date()) && "bg-primary/5"
-            )}
-            onClick={() => onDateChange(day)}
-          >
-            {/* Timegrid */}
-            {hours.map((hour) => (
-              <div
-                key={hour}
-                className={cn(
-                  "h-20 border-b border-border print:border-gray-200 relative group print:h-28",
-                  isToday(day) &&
-                    hour === new Date().getHours() &&
-                    "bg-primary/5"
-                )}
-              >
-                {/* Vis nuværende tid som baggrund på den aktuelle time */}
-                {isToday(day) && hour === new Date().getHours() && (
-                  <div className="absolute inset-0 flex items-center justify-end pr-2">
-                    <span className="text-sm font-medium text-primary">
-                      {format(new Date(), "HH:mm")}
-                    </span>
-                  </div>
-                )}
-              </div>
-            ))}
+        {weekDays.map((day) => {
+          const { regularEvents } = getEventsForDay(day);
+          const dayEvents = regularEvents;
 
-            {/* Events - kun ikke-heldagsbegivenheder */}
-            {getEventsForDay(day).map((event) => {
-              const [startHour, startMinute] = (event.start_time || "00:00")
-                .split(":")
-                .map(Number);
-              const [endHour, endMinute] = (event.end_time || "23:59")
-                .split(":")
-                .map(Number);
+          return (
+            <div
+              key={day.toISOString()}
+              className={cn(
+                "relative border-r border-border print:border-gray-200",
+                isSameDay(day, new Date()) && "bg-primary/5"
+              )}
+              onClick={() => onDateChange(day)}
+            >
+              {/* Timegrid med tidsindikator */}
+              {hours.map((hour) => (
+                <div
+                  key={hour}
+                  className={cn(
+                    "h-20 border-b border-border print:border-gray-200 relative group",
+                    isToday(day) &&
+                      hour === new Date().getHours() &&
+                      "bg-primary/5"
+                  )}
+                >
+                  {/* Tidsindikator i venstre side - removed */}
+                  {/* {/* <div className="absolute -left-2 -top-3 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                    {format(new Date().setHours(hour, 0), "HH:mm")}
+                  </div> */}
 
-              const startMinutes = startHour * 60 + startMinute;
-              const endMinutes = endHour * 60 + endMinute;
+                  {/* Vis nuværende tid som baggrund på den aktuelle time */}
+                  {isToday(day) && hour === new Date().getHours() && (
+                    <div className="absolute inset-0 flex items-center justify-end pr-2">
+                      <span className="text-sm font-medium text-primary">
+                        {format(new Date(), "HH:mm")}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
 
-              const pixelsPerMinute = 112 / 60; // Justeret for print højde (28rem * 4)
-              const top = startMinutes * pixelsPerMinute;
-              const height = (endMinutes - startMinutes) * pixelsPerMinute;
+              {/* Events - kun ikke-heldagsbegivenheder */}
+              {dayEvents.map((event) => {
+                const [startHour, startMinute] = (event.start_time || "00:00")
+                  .split(":")
+                  .map(Number);
+                const [endHour, endMinute] = (event.end_time || "23:59")
+                  .split(":")
+                  .map(Number);
 
-              return (
-                <EventItem
-                  key={event.id}
-                  event={event}
-                  className="absolute left-1 right-1 z-10 rounded-md shadow-sm print:left-3 print:right-3 print:text-base print:font-medium print:p-2"
-                  style={{
-                    top: `${top}px`,
-                    height: `${height}px`,
-                    minHeight: "24px",
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedEvent(event);
-                  }}
-                />
-              );
-            })}
-          </div>
-        ))}
+                const startMinutes = startHour * 60 + startMinute;
+                const endMinutes = endHour * 60 + endMinute;
+
+                const pixelsPerMinute = 112 / 60; // Justeret for print højde (28rem * 4)
+                const top = startMinutes * pixelsPerMinute;
+                const height = (endMinutes - startMinutes) * pixelsPerMinute;
+
+                return (
+                  <EventItem
+                    key={event.id}
+                    event={event}
+                    className="absolute left-1 right-1 z-10 rounded-md shadow-sm"
+                    style={{
+                      top: `${top}px`,
+                      height: `${height}px`,
+                      minHeight: "24px",
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedEvent(event);
+                    }}
+                  >
+                    {/* Tilføj tidspunkt i event */}
+                    <div className="text-[8px] opacity-70">
+                      {event.start_time} - {event.end_time}
+                    </div>
+                  </EventItem>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
 
       {/* Event dialog */}

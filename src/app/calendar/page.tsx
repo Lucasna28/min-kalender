@@ -43,7 +43,8 @@ import { useReactToPrint } from "react-to-print";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useEvents } from "@/hooks/use-events";
-import { CalendarViewType } from "@/components/calendar/calendar-view";
+import type { CalendarViewType } from "@/components/calendar/calendar-view";
+import { RealtimeChannel } from "@supabase/supabase-js";
 
 export default function CalendarPage() {
   const { supabase, session } = useSupabase();
@@ -194,7 +195,7 @@ export default function CalendarPage() {
 
     fetchUnreadCount();
 
-    let channel;
+    let channel: RealtimeChannel;
     try {
       channel = supabase
         .channel("notifications")
@@ -326,81 +327,10 @@ export default function CalendarPage() {
     }
   };
 
-  const handleTutorialComplete = async () => {
-    try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) throw userError;
-      if (!user) return;
-
-      const { error: updateError } = await supabase.from("profiles").upsert({
-        id: user.id,
-        has_completed_tutorial: true,
-        updated_at: new Date().toISOString(),
-      });
-
-      if (updateError) throw updateError;
-
-      setShowTutorial(false);
-      setTutorialProgress(100);
-    } catch (error) {
-      console.error("Fejl ved gem af tutorial status:", error);
-      toast.error("Der opstod en fejl ved gem af tutorial status");
-    }
-  };
-
-  const handleTutorialSkip = async () => {
-    try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) throw userError;
-      if (!user) return;
-
-      const { error: updateError } = await supabase.from("profiles").upsert({
-        id: user.id,
-        has_completed_tutorial: true,
-        updated_at: new Date().toISOString(),
-      });
-
-      if (updateError) throw updateError;
-
-      setShowTutorial(false);
-      setTutorialProgress(100);
-    } catch (error) {
-      console.error("Fejl ved spring over af tutorial:", error);
-      toast.error("Der opstod en fejl ved spring over af tutorial");
-    }
-  };
-
   return (
-    <div className="flex h-screen bg-background">
-      <TutorialDialog
-        isOpen={showTutorial}
-        onOpenChange={setShowTutorial}
-        onComplete={handleTutorialComplete}
-        onSkip={handleTutorialSkip}
-      />
-      <ProfileSettingsDialog
-        isOpen={isProfileOpen}
-        onOpenChange={setIsProfileOpen}
-        userEmail={userEmail}
-      />
-      <NotificationsDialog
-        isOpen={isNotificationsSettingsOpen}
-        onOpenChange={setIsNotificationsSettingsOpen}
-      />
-      <NotificationsListDialog
-        isOpen={isNotificationsOpen}
-        onOpenChange={setIsNotificationsOpen}
-      />
-      <div className="fixed top-0 left-0 right-0 z-50 flex flex-col bg-background/50 supports-[backdrop-filter]:bg-background/30 backdrop-blur-xl border-b border-border/40 shadow-lg after:absolute after:inset-0 after:bg-gradient-to-b after:from-background/10 after:to-transparent after:pointer-events-none">
-        <div className="flex items-center justify-between p-4 mx-auto w-full max-w-[2000px] relative before:absolute before:inset-0 before:bg-gradient-to-r before:from-primary/5 before:via-transparent before:to-primary/5 before:animate-gradient-x">
+    <div className="flex flex-col h-screen overflow-hidden bg-background">
+      <div className="flex-shrink-0 h-14 fixed top-0 left-0 right-0 z-50 bg-background/50 supports-[backdrop-filter]:bg-background/30 backdrop-blur-xl border-b border-border/40 shadow-sm">
+        <div className="flex items-center justify-between h-full px-4 mx-auto w-full max-w-[2000px]">
           <div className="flex items-center gap-4 sm:ml-80">
             <Button
               variant="ghost"
@@ -665,7 +595,7 @@ export default function CalendarPage() {
                     <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                       <span className="text-sm">Skift tema</span>
                       <span className="text-xs text-muted-foreground">
-                        Lys eller mørkt tema
+                        Lys eller m��rkt tema
                       </span>
                     </div>
                   </DropdownMenuItem>
@@ -691,61 +621,78 @@ export default function CalendarPage() {
                   </DropdownMenuItem>
                 </div>
               </DropdownMenuContent>
-            </DropdownMenu>
+            </DropdownMenu>{" "}
           </div>
         </div>
       </div>
 
-      {isSidebarOpen && (
+      <div className="flex flex-1 pt-14 overflow-hidden">
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-background/60 backdrop-blur-xl z-40 sm:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+
         <div
-          className="fixed inset-0 bg-background/60 backdrop-blur-xl z-40 sm:hidden animate-in fade-in-0 duration-300"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
+          className={cn(
+            "fixed inset-y-0 left-0 z-40 w-[280px] bg-background border-r",
+            "transition-transform duration-300 ease-in-out pt-14",
+            "sm:relative sm:translate-x-0 sm:pt-0",
+            "print:hidden",
+            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          )}
+        >
+          <div className="h-full overflow-y-auto">
+            <CalendarSidebar
+              view={view}
+              onViewChange={setView}
+              selectedDate={selectedDate}
+              onDateChange={setSelectedDate}
+              visibleCalendarIds={visibleCalendarIds}
+              onVisibleCalendarIdsChange={setVisibleCalendarIds}
+              selectedCalendarId={selectedCalendarId}
+              onSelectedCalendarIdChange={setSelectedCalendarId}
+              isOpen={isSidebarOpen}
+              onOpenChange={setIsSidebarOpen}
+              showHolidays={showHolidays}
+              onShowHolidaysChange={setShowHolidays}
+              handlePrint={handlePrint}
+            />
+          </div>
+        </div>
 
-      <div
-        className={`
-        fixed inset-y-0 left-0 z-50 w-[280px] bg-background border-r
-        transition-transform duration-300 ease-in-out
-        ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
-        sm:relative sm:translate-x-0
-        print:hidden
-      `}
-      >
-        <CalendarSidebar
-          view={view}
-          onViewChange={setView}
-          selectedDate={selectedDate}
-          onDateChange={setSelectedDate}
-          visibleCalendarIds={visibleCalendarIds}
-          onVisibleCalendarIdsChange={setVisibleCalendarIds}
-          selectedCalendarId={selectedCalendarId}
-          onSelectedCalendarIdChange={setSelectedCalendarId}
-          isOpen={isSidebarOpen}
-          onOpenChange={setIsSidebarOpen}
-          showHolidays={showHolidays}
-          onShowHolidaysChange={setShowHolidays}
-          handlePrint={handlePrint}
-        />
+        <div className="flex-1 min-w-0 h-full">
+          <CalendarView
+            ref={calendarRef}
+            view={view}
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+            onViewChange={setView}
+            visibleCalendarIds={visibleCalendarIds}
+            onSidebarOpenChange={setIsSidebarOpen}
+            isCreateEventOpen={isCreateEventOpen}
+            onCreateEventOpenChange={setIsCreateEventOpen}
+            showHolidays={showHolidays}
+            events={events}
+            onUpdateEvent={updateEvent}
+            onDeleteEvent={deleteEvent}
+          />
+        </div>
       </div>
-
-      <div className="flex-1 mt-[64px] sm:mt-[64px] print:mt-0">
-        <CalendarView
-          ref={calendarRef}
-          view={view}
-          selectedDate={selectedDate}
-          onDateChange={setSelectedDate}
-          onViewChange={setView}
-          visibleCalendarIds={visibleCalendarIds}
-          onSidebarOpenChange={setIsSidebarOpen}
-          isCreateEventOpen={isCreateEventOpen}
-          onCreateEventOpenChange={setIsCreateEventOpen}
-          showHolidays={showHolidays}
-          events={events}
-          onUpdateEvent={updateEvent}
-          onDeleteEvent={deleteEvent}
-        />
-      </div>
+      <ProfileSettingsDialog
+        isOpen={isProfileOpen}
+        onOpenChange={setIsProfileOpen}
+        userEmail={userEmail}
+      />
+      <NotificationsDialog
+        isOpen={isNotificationsSettingsOpen}
+        onOpenChange={setIsNotificationsSettingsOpen}
+      />
+      <NotificationsListDialog
+        isOpen={isNotificationsOpen}
+        onOpenChange={setIsNotificationsOpen}
+      />
     </div>
   );
 }
