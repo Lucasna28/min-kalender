@@ -48,7 +48,7 @@ import { CalendarViewType } from "@/components/calendar/calendar-view";
 export default function CalendarPage() {
   const { supabase, session } = useSupabase();
   const [visibleCalendarIds, setVisibleCalendarIds] = useState<string[]>([]);
-  const { events, createEvent, deleteEvent } = useEvents(visibleCalendarIds);
+  const { events, updateEvent, deleteEvent } = useEvents(visibleCalendarIds);
   const [view, setView] = useState<CalendarViewType>("month");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedCalendarId, setSelectedCalendarId] = useState<string | null>(
@@ -768,6 +768,8 @@ export default function CalendarPage() {
           onCreateEventOpenChange={setIsCreateEventOpen}
           showHolidays={showHolidays}
           events={events}
+          onUpdateEvent={updateEvent}
+          onDeleteEvent={deleteEvent}
         />
       </div>
     </div>

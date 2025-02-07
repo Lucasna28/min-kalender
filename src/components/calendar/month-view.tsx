@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { memo } from "react";
+import { toast } from "sonner";
 
 interface MonthViewProps {
   date: Date;
@@ -184,6 +185,38 @@ export function MonthView({
       setDanishHolidays(holidays);
     }
   }, [date]);
+
+  // Håndter redigering af event
+  const handleEdit = async (event: CalendarEvent) => {
+    try {
+      // Tjek om det er en helligdag
+      if (event.calendar_id === "danish-holidays") {
+        toast.error("Du kan ikke redigere helligdage");
+        return;
+      }
+
+      console.log("Redigerer event:", event);
+      setSelectedEvent(null);
+    } catch (error) {
+      console.error("Fejl ved redigering af event:", error);
+    }
+  };
+
+  // Håndter sletning af event
+  const handleDelete = async (eventId: string) => {
+    try {
+      // Tjek om det er en helligdag
+      if (selectedEvent?.calendar_id === "danish-holidays") {
+        toast.error("Du kan ikke slette helligdage");
+        return;
+      }
+
+      console.log("Sletter event:", eventId);
+      setSelectedEvent(null);
+    } catch (error) {
+      console.error("Fejl ved sletning af event:", error);
+    }
+  };
 
   if (!mounted) {
     return (
@@ -385,6 +418,8 @@ export function MonthView({
           event={selectedEvent}
           isOpen={!!selectedEvent}
           onOpenChange={(open) => !open && setSelectedEvent(null)}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
         />
       )}
     </div>

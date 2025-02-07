@@ -37,7 +37,8 @@ import { CalendarEvent } from "@/hooks/use-events";
 
 interface ViewEventDialogProps {
   event: CalendarEvent | null;
-  onClose: () => void;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
   onEdit?: (event: CalendarEvent) => void;
   onDelete?: (eventId: string) => void;
 }
@@ -72,13 +73,42 @@ const statusColors = {
 
 export function ViewEventDialog({
   event,
-  onClose,
+  isOpen,
+  onOpenChange,
   onEdit,
   onDelete,
 }: ViewEventDialogProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   if (!event) return null;
+
+  // Hjælpefunktion til at sikre gyldige datoer
+  const formatEventDate = (date: Date | string) => {
+    try {
+      const eventDate = date instanceof Date ? date : new Date(date);
+      if (isNaN(eventDate.getTime())) {
+        console.error("Ugyldig dato:", date);
+        return new Date();
+      }
+      return eventDate;
+    } catch (error) {
+      console.error("Fejl ved formatering af dato:", error);
+      return new Date();
+    }
+  };
+
+  const startDate = formatEventDate(event.start_date);
+  const endDate = formatEventDate(event.end_date);
+
+  const createdAtDate = event.created_at
+    ? formatEventDate(event.created_at)
+    : null;
+  console.log("Event data:", {
+    event,
+    startDate,
+    endDate,
+    createdAt: createdAtDate,
+  });
 
   const handleEdit = () => {
     if (event && onEdit) {
@@ -91,7 +121,7 @@ export function ViewEventDialog({
       try {
         await onDelete(event.id);
         setShowDeleteDialog(false);
-        onClose();
+        onOpenChange(false);
       } catch (error) {
         console.error("Fejl ved sletning af begivenhed:", error);
       }
@@ -107,7 +137,7 @@ export function ViewEventDialog({
   return (
     <AnimatePresence>
       {!!event && (
-        <Dialog open={!!event} onOpenChange={onClose}>
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
           <DialogContent
             className={cn(
               "max-w-[95vw] w-full lg:max-w-3xl p-0 overflow-hidden",
@@ -143,10 +173,10 @@ export function ViewEventDialog({
                     className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full"
                   >
                     <span className="text-white/90 text-sm font-medium">
-                      {event.allDay
+                      {event.is_all_day
                         ? "Hele dagen"
-                        : `${format(event.start, "HH:mm")} - ${format(
-                            event.end,
+                        : `${format(startDate, "HH:mm")} - ${format(
+                            endDate,
                             "HH:mm"
                           )}`}
                     </span>
@@ -209,19 +239,19 @@ export function ViewEventDialog({
                     </div>
                     <div className="space-y-1 min-w-0">
                       <p className="font-medium">
-                        {format(event.start, "EEEE d. MMMM yyyy", {
+                        {format(startDate, "EEEE d. MMMM yyyy", {
                           locale: da,
                         })}
                       </p>
-                      {event.end.getTime() !== event.start.getTime() && (
+                      {endDate.getTime() !== startDate.getTime() && (
                         <p className="text-muted-foreground">
                           til{" "}
-                          {format(event.end, "EEEE d. MMMM yyyy", {
+                          {format(endDate, "EEEE d. MMMM yyyy", {
                             locale: da,
                           })}
                         </p>
                       )}
-                      {event.allDay && (
+                      {event.is_all_day && (
                         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 mt-1 text-xs font-medium text-primary bg-primary/10 rounded-full">
                           Hele dagen
                         </span>
@@ -229,32 +259,27 @@ export function ViewEventDialog({
                     </div>
                   </div>
 
-                  {!event.allDay &&
-                    event.start.getTime() !== event.end.getTime() && (
-                      <div className="flex items-center gap-4 group">
-                        <div
-                          className={cn(
-                            "bg-primary/10 p-2.5 rounded-xl shrink-0",
-                            "transition-all duration-300 group-hover:scale-110 group-hover:rotate-[8deg] group-hover:bg-primary/20"
-                          )}
-                        >
-                          <Clock className="w-5 h-5 text-primary" />
-                        </div>
-                        <div className="space-y-1 min-w-0">
-                          <p className="font-medium">
-                            {format(event.start, "HH:mm")} -{" "}
-                            {format(event.end, "HH:mm")}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Varighed:{" "}
-                            {calculateDuration(
-                              format(event.start, "HH:mm"),
-                              format(event.end, "HH:mm")
-                            )}
-                          </p>
-                        </div>
+                  {!event.is_all_day && event.start_time && event.end_time && (
+                    <div className="flex items-center gap-4 group">
+                      <div
+                        className={cn(
+                          "bg-primary/10 p-2.5 rounded-xl shrink-0",
+                          "transition-all duration-300 group-hover:scale-110 group-hover:rotate-[8deg] group-hover:bg-primary/20"
+                        )}
+                      >
+                        <Clock className="w-5 h-5 text-primary" />
                       </div>
-                    )}
+                      <div className="space-y-1 min-w-0">
+                        <p className="font-medium">
+                          {event.start_time} - {event.end_time}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Varighed:{" "}
+                          {calculateDuration(event.start_time, event.end_time)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   {event.location && (
                     <div className="flex items-start gap-2">
@@ -358,24 +383,26 @@ export function ViewEventDialog({
                   <div className="flex items-center justify-between text-xs text-muted-foreground pt-4 mt-6 border-t border-border/40">
                     <span>
                       Oprettet{" "}
-                      {format(event.created_at, "d. MMM yyyy 'kl.' HH:mm", {
-                        locale: da,
-                      })}
+                      {createdAtDate
+                        ? format(createdAtDate, "d. MMM yyyy 'kl.' HH:mm", {
+                            locale: da,
+                          })
+                        : "Dato ikke tilgængelig"}
                     </span>
                   </div>
                 </div>
               </motion.div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={onClose}>
+                <Button variant="outline" onClick={() => onOpenChange(false)}>
                   Luk
                 </Button>
-                {onEdit && (
+                {onEdit && event.calendar_id !== "danish-holidays" && (
                   <Button variant="outline" onClick={handleEdit}>
                     Rediger
                   </Button>
                 )}
-                {onDelete && (
+                {onDelete && event.calendar_id !== "danish-holidays" && (
                   <Button
                     variant="destructive"
                     onClick={() => setShowDeleteDialog(true)}
@@ -420,22 +447,22 @@ export function ViewEventDialog({
 }
 
 function calculateDuration(start: string, end: string): string {
-  const [startHour, startMinute] = start.split(":").map(Number);
-  const [endHour, endMinute] = end.split(":").map(Number);
+  try {
+    const [startHours, startMinutes] = start.split(":").map(Number);
+    const [endHours, endMinutes] = end.split(":").map(Number);
 
-  let hours = endHour - startHour;
-  let minutes = endMinute - startMinute;
+    let durationMinutes =
+      endHours * 60 + endMinutes - (startHours * 60 + startMinutes);
+    if (durationMinutes < 0) durationMinutes += 24 * 60;
 
-  if (minutes < 0) {
-    hours -= 1;
-    minutes += 60;
-  }
+    const hours = Math.floor(durationMinutes / 60);
+    const minutes = durationMinutes % 60;
 
-  if (hours === 0) {
-    return `${minutes} minutter`;
-  } else if (minutes === 0) {
-    return `${hours} time${hours === 1 ? "" : "r"}`;
-  } else {
-    return `${hours} time${hours === 1 ? "" : "r"} og ${minutes} minutter`;
+    if (hours === 0) return `${minutes} minutter`;
+    if (minutes === 0) return `${hours} timer`;
+    return `${hours} timer og ${minutes} minutter`;
+  } catch (error) {
+    console.error("Fejl ved beregning af varighed:", error);
+    return "Ukendt varighed";
   }
 }
