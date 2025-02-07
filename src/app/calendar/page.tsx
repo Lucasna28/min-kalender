@@ -211,9 +211,7 @@ export default function CalendarPage() {
         )
         .subscribe((status) => {
           if (status === "SUBSCRIBED") {
-            
           } else if (status === "CLOSED") {
-            
           } else if (status === "CHANNEL_ERROR") {
             console.error("Fejl i notifikations channel");
             toast.error("Der opstod en fejl med notifikationer");
@@ -237,13 +235,10 @@ export default function CalendarPage() {
   useEffect(() => {
     const fetchCalendars = async () => {
       if (!session?.user?.id) {
-        
         return;
       }
 
       try {
-        
-
         // Hent både brugerens egne kalendere og delte kalendere
         const [ownCalendarsResponse, sharedCalendarsResponse] =
           await Promise.all([
@@ -274,7 +269,6 @@ export default function CalendarPage() {
           sharedCalendarsResponse.data?.map((share) => share.calendars) || [];
 
         const allCalendars = [...ownCalendars, ...sharedCalendars];
-        
 
         if (!allCalendars.length) {
           // Opret standardkalender hvis ingen findes
@@ -293,7 +287,6 @@ export default function CalendarPage() {
 
           if (createError) throw createError;
 
-          
           setVisibleCalendarIds([newCalendar.id]);
         } else {
           // Sæt synlige kalendere
@@ -301,7 +294,6 @@ export default function CalendarPage() {
             .filter((cal) => cal.is_visible)
             .map((cal) => cal.id);
 
-          
           setVisibleCalendarIds(visibleIds);
         }
       } catch (error) {
@@ -387,7 +379,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen bg-background">
       <TutorialDialog
         isOpen={showTutorial}
         onOpenChange={setShowTutorial}

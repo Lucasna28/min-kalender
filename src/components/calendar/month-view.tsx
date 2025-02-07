@@ -103,7 +103,7 @@ const DayCell = memo(
     return (
       <div
         className={cn(
-          "min-h-[6rem] p-2 relative",
+          "min-h-[6rem] p-2",
           isToday && "bg-accent/50",
           isSelected && "ring-2 ring-primary",
           isOutsideMonth && "opacity-50"
@@ -114,15 +114,10 @@ const DayCell = memo(
       >
         <time dateTime={format(day, "yyyy-MM-dd")}>{format(day, "d.")}</time>
 
-        <div
-          ref={parentRef}
-          className="overflow-y-auto max-h-[120px] space-y-1 mt-1"
-        >
+        <div ref={parentRef} className=" max-h-[120px] space-y-1 mt-1">
           <div
             style={{
               height: `${virtualizer.getTotalSize()}px`,
-              width: "100%",
-              position: "relative",
             }}
           >
             {virtualizer.getVirtualItems().map((virtualRow) => (
@@ -283,7 +278,7 @@ export function MonthView({
   return (
     <div className="flex flex-col h-full bg-background print:bg-white">
       {/* Ugedage header - mere kompakt på små skærme */}
-      <div className="grid grid-cols-7 text-[8px] sm:text-xs font-medium text-muted-foreground border-b border-border print:border-gray-200">
+      <div className="grid grid-cols-7 text-[8px] sm:text-xs font-medium text-muted-foreground border-b border-border print:border-gray-200 ">
         {["M", "Ti", "O", "To", "F", "L", "S"].map((day) => (
           <div
             key={day}
@@ -303,7 +298,7 @@ export function MonthView({
 
       {/* Kalendergrid - optimeret for alle skærmstørrelser */}
       <div
-        className="grid grid-cols-7 flex-1 print:gap-0 overflow-x-auto sm:overflow-x-visible"
+        className="grid grid-cols-7 flex-1 print:gap-0"
         style={{
           gridTemplateRows: `repeat(${numberOfWeeks}, minmax(80px, 1fr))`,
           gridTemplateColumns: "repeat(7, minmax(40px, 1fr))", // Minimum 40px pr kolonne
