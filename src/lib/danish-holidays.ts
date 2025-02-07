@@ -213,12 +213,6 @@ export function getDanishHolidays(year: number): DanishHoliday[] {
       color: "#f59e0b",
     },
     {
-      date: new Date(year, 5, 28),
-      title: "Lucas' Fødselsdag 🎉",
-      type: "birthday",
-      color: "#3b82f6",
-    },
-    {
       date: new Date(year, 7, 1),
       title: "International Øldag",
       type: "special",
@@ -388,9 +382,9 @@ export function getDanishHolidays(year: number): DanishHoliday[] {
   const birthdays: DanishHoliday[] = [
     {
       title: "Lucas' fødselsdag 🎂",
-      date: new Date(year, 0, 7), // 7. januar
+      date: new Date(year, 5, 28), // 28. juni (måned er 0-baseret, så juni er 5)
       type: "birthday",
-      color: "#FF69B4", // Pink farve til fødselsdage
+      color: "#FF69B4",
     },
     {
       title: "Nilaus' fødselsdag 🎂",
