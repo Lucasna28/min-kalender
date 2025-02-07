@@ -16,9 +16,6 @@ import { VIEW_OPTIONS } from "@/lib/constants";
 import { useSupabase } from "@/components/providers/supabase-provider";
 import "@/styles/print.css";
 import { Event } from "@/types/calendar";
-import { useSwipe } from "@/hooks/use-swipe";
-import { vibrate } from "@/lib/haptics";
-import { addDays, subDays, addMonths, subMonths } from "date-fns";
 
 export type CalendarViewType = "day" | "week" | "month" | "year";
 
@@ -190,38 +187,6 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
       setIsCreateEventOpen(true);
       toast.success("Opret ny begivenhed");
     });
-
-    const handleSwipeLeft = () => {
-      vibrate(50);
-      switch (view) {
-        case "day":
-          onDateChange(addDays(selectedDate, 1));
-          break;
-        case "week":
-          onDateChange(addDays(selectedDate, 7));
-          break;
-        case "month":
-          onDateChange(addMonths(selectedDate, 1));
-          break;
-      }
-    };
-
-    const handleSwipeRight = () => {
-      vibrate(50);
-      switch (view) {
-        case "day":
-          onDateChange(subDays(selectedDate, 1));
-          break;
-        case "week":
-          onDateChange(subDays(selectedDate, 7));
-          break;
-        case "month":
-          onDateChange(subMonths(selectedDate, 1));
-          break;
-      }
-    };
-
-    useSwipe({ onSwipeLeft: handleSwipeLeft, onSwipeRight: handleSwipeRight });
 
     // Render den aktuelle view komponent
     const CurrentView =

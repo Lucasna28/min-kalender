@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { da } from "date-fns/locale";
 import { getWeekNumber } from "@/lib/date-utils";
+import { cn } from "@/lib/utils";
 
 interface HeaderProps {
   onOpenSidebar: () => void;
@@ -18,7 +19,13 @@ export function Header({
   const weekNumber = getWeekNumber(currentDate);
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header
+      className={cn(
+        "sticky top-0 z-40 border-b bg-background/95 backdrop-blur",
+        "supports-[backdrop-filter]:bg-background/60",
+        "pt-[env(safe-area-inset-top)]"
+      )}
+    >
       <div className="flex h-16 items-center gap-4 px-4">
         <motion.button
           whileHover={{ scale: 1.05 }}

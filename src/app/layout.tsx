@@ -30,12 +30,22 @@ export default function RootLayout({
           name="apple-mobile-web-app-status-bar-style"
           content="black-translucent"
         />
+        <meta name="apple-mobile-web-app-title" content="Min Kalender" />
+
+        {/* Safari mobile web app styling */}
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-touch-fullscreen" content="yes" />
+
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
+
+        {/* Forhindre telefonnumre i at blive links */}
+        <meta name="format-detection" content="telephone=no" />
       </head>
       <body
         className={cn(
           "min-h-screen bg-background antialiased",
+          "min-h-[100dvh]", // Brug dynamic viewport height
           inter.className
         )}
       >

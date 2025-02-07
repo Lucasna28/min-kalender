@@ -156,12 +156,8 @@ export function MonthView({
   onDateChange,
   showHolidays,
 }: MonthViewProps) {
-  
-
   useEffect(() => {
     if (events.length > 0) {
-      
-      
     }
   }, [events]);
 
@@ -195,7 +191,6 @@ export function MonthView({
         return;
       }
 
-      
       setSelectedEvent(null);
     } catch (error) {
       console.error("Fejl ved redigering af event:", error);
@@ -211,7 +206,6 @@ export function MonthView({
         return;
       }
 
-      
       setSelectedEvent(null);
     } catch (error) {
       console.error("Fejl ved sletning af event:", error);
@@ -234,7 +228,6 @@ export function MonthView({
     // Almindelige events
     const regularEvents = events.filter((event) => {
       if (!event.start_date || !event.end_date) {
-        
         return false;
       }
 
@@ -291,12 +284,18 @@ export function MonthView({
     <div className="flex flex-col h-full bg-background print:bg-white">
       {/* Ugedage header */}
       <div className="grid grid-cols-7 text-sm font-medium text-muted-foreground border-b border-border print:border-gray-200">
-        {["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"].map((day) => (
+        {["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"].map((day, i) => (
           <div
             key={day}
-            className="h-10 flex items-center justify-center border-r border-border print:border-gray-200 print:text-gray-600 print:font-semibold print:text-base"
+            className={cn(
+              "h-10 flex items-center justify-center border-r border-border print:border-gray-200 print:text-gray-600 print:font-semibold print:text-base",
+              // Vis kun første bogstav på små skærme
+              "sm:block",
+              "relative"
+            )}
           >
-            {day}
+            <span className="hidden sm:block">{day}</span>
+            <span className="sm:hidden">{day[0]}</span>
           </div>
         ))}
       </div>
@@ -305,7 +304,7 @@ export function MonthView({
       <div
         className="grid grid-cols-7 flex-1 print:gap-0"
         style={{
-          gridTemplateRows: `repeat(${numberOfWeeks}, minmax(120px, 1fr))`,
+          gridTemplateRows: `repeat(${numberOfWeeks}, minmax(100px, 1fr))`,
         }}
       >
         {days.map((day, dayIdx) => {
@@ -318,110 +317,73 @@ export function MonthView({
             <div
               key={day.toISOString()}
               className={cn(
-                "border-r border-b border-border print:border-gray-200 p-1 relative transition-colors duration-200",
+                "border-r border-b border-border print:border-gray-200 relative transition-colors duration-200",
+                "min-h-[100px] sm:min-h-[120px]", // Mindre højde på mobile
                 !isCurrentMonth && "bg-muted/30 print:bg-gray-50",
                 isToday(day) && "bg-primary/5 print:bg-transparent",
                 "hover:bg-accent/50 cursor-pointer group print:hover:bg-transparent"
               )}
               onClick={() => onDateChange(day, { shouldOpenCreateEvent: true })}
             >
+              {/* Ugenummer - kun synlig på større skærme */}
               {isFirstInWeek && (
-                <div className="absolute -left-8 top-1 text-xs text-muted-foreground print:text-gray-500 print:font-medium">
+                <div className="hidden sm:block absolute -left-8 top-1 text-xs text-muted-foreground print:text-gray-500 print:font-medium">
                   {weekNumber}
                 </div>
               )}
 
-              <div
-                className={cn(
-                  "text-sm font-medium h-6 flex items-center justify-end px-1 print:text-base print:font-semibold",
-                  !isCurrentMonth &&
-                    "text-muted-foreground/50 italic print:text-gray-400",
-                  isToday(day) &&
-                    "text-primary font-bold print:text-inherit print:font-normal"
-                )}
-              >
-                {!isCurrentMonth && (
-                  <span className="text-xs mr-1 text-muted-foreground/40 print:text-gray-400">
-                    {format(day, "MMM", { locale: da })}
-                  </span>
-                )}
-                {format(day, "d.")}
-              </div>
-
-              {isLoading ? (
-                <div className="space-y-1">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-4 w-1/2" />
+              {/* Dato header */}
+              <div className="p-1 sm:p-2">
+                <div
+                  className={cn(
+                    "text-sm font-medium h-6 flex items-center justify-end px-1 print:text-base print:font-semibold",
+                    !isCurrentMonth &&
+                      "text-muted-foreground/50 italic print:text-gray-400",
+                    isToday(day) &&
+                      "text-primary font-bold print:text-inherit print:font-normal"
+                  )}
+                >
+                  {!isCurrentMonth && (
+                    <span className="text-xs mr-1 text-muted-foreground/40 print:text-gray-400 hidden sm:inline">
+                      {format(day, "MMM", { locale: da })}
+                    </span>
+                  )}
+                  {format(day, "d.")}
                 </div>
-              ) : (
-                <div className="space-y-1 max-h-[calc(100%-1.5rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/30 print:max-h-none print:overflow-visible">
-                  {dayEvents.map((event) => (
-                    <TooltipProvider key={event.id}>
-                      <Tooltip delayDuration={200}>
-                        <TooltipTrigger asChild>
-                          <div>
-                            <MemoizedEventItem
-                              event={event}
-                              className={cn(
-                                "text-xs p-1 rounded-sm shadow-sm cursor-pointer transition-all duration-200",
-                                "hover:shadow-md hover:scale-[1.02] print:hover:shadow-none print:hover:scale-100",
-                                "print:text-sm print:p-1.5 print:rounded-md print:border print:shadow-none",
-                                !isCurrentMonth && "opacity-50"
-                              )}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedEvent(event);
-                              }}
-                            />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent
-                          side="right"
-                          className="max-w-[300px] print:hidden"
-                        >
-                          <div className="space-y-1">
-                            <p className="font-medium">{event.title}</p>
-                            {!event.is_all_day && (
-                              <p className="text-sm text-muted-foreground">
-                                {event.start_time} - {event.end_time}
-                              </p>
-                            )}
-                            {event.description && (
-                              <p className="text-sm">{event.description}</p>
-                            )}
-                            {event.location && (
-                              <p className="text-sm text-muted-foreground">
-                                📍 {event.location}
-                              </p>
-                            )}
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+
+                {/* Events liste - tilpasset til mobile */}
+                <div className="space-y-1 mt-1">
+                  {dayEvents.slice(0, 3).map((event) => (
+                    <EventItem
+                      key={event.id}
+                      event={event}
+                      className="text-xs truncate sm:text-sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedEvent(event);
+                      }}
+                    />
                   ))}
+                  {dayEvents.length > 3 && (
+                    <div className="text-xs text-muted-foreground px-1">
+                      +{dayEvents.length - 3} mere
+                    </div>
+                  )}
                 </div>
-              )}
-
-              {dayEvents.length > 4 && (
-                <div className="absolute bottom-1 right-1 text-xs text-muted-foreground bg-background/80 px-1 rounded print:hidden">
-                  +{dayEvents.length - 4} mere
-                </div>
-              )}
+              </div>
             </div>
           );
         })}
       </div>
 
       {/* Event dialog */}
-      {selectedEvent && (
-        <ViewEventDialog
-          event={selectedEvent}
-          isOpen={!!selectedEvent}
-          onOpenChange={(open) => !open && setSelectedEvent(null)}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
-      )}
+      <ViewEventDialog
+        event={selectedEvent}
+        isOpen={!!selectedEvent}
+        onOpenChange={(open) => !open && setSelectedEvent(null)}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
     </div>
   );
 }
