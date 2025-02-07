@@ -25,46 +25,25 @@ export function SidebarContainer({
     window.print();
   };
 
-  const handleDateChange = (date: Date) => {
-    setSelectedDate(date);
-    if (view === "year" || view === "month") {
-      setView("day");
-    }
-  };
-
   return (
     <>
-      <div className="hidden lg:flex lg:w-72 flex-col bg-muted/50 backdrop-blur-xl border-r">
-        <CalendarSidebar
-          view={view}
-          onViewChange={setView}
-          selectedDate={selectedDate}
-          onDateChange={handleDateChange}
-          visibleCalendarIds={visibleCalendarIds}
-          onVisibleCalendarIdsChange={setVisibleCalendarIds}
-          selectedCalendarId={selectedCalendarId}
-          onSelectedCalendarIdChange={setSelectedCalendarId}
-          isOpen={true}
-          onOpenChange={() => {}}
-          showHolidays={showHolidays}
-          onShowHolidaysChange={setShowHolidays}
-          handlePrint={handlePrint}
-        />
-      </div>
-
-      <div
+      <aside
+        role="complementary"
+        aria-label="Kalender navigation"
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-72 lg:hidden",
-          isOpen ? "translate-x-0" : "-translate-x-full",
-          "transition-transform duration-300 ease-in-out"
+          "fixed inset-y-0 left-0",
+          "w-72 bg-muted/50 backdrop-blur-xl border-r",
+          "transform transition-transform duration-300 ease-in-out",
+          "z-50",
+          isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="h-full flex flex-col bg-muted/50 backdrop-blur-xl border-r">
+        <nav role="navigation" aria-label="Kalender navigation">
           <CalendarSidebar
             view={view}
             onViewChange={setView}
             selectedDate={selectedDate}
-            onDateChange={handleDateChange}
+            onDateChange={setSelectedDate}
             visibleCalendarIds={visibleCalendarIds}
             onVisibleCalendarIdsChange={setVisibleCalendarIds}
             selectedCalendarId={selectedCalendarId}
@@ -75,11 +54,14 @@ export function SidebarContainer({
             onShowHolidaysChange={setShowHolidays}
             handlePrint={handlePrint}
           />
-        </div>
-      </div>
+        </nav>
+      </aside>
 
+      {/* Overlay for mobile only */}
       {isOpen && (
         <div
+          role="presentation"
+          aria-hidden="true"
           className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
           onClick={() => onOpenChange(false)}
         />
