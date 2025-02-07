@@ -45,6 +45,7 @@ import { toast } from "sonner";
 import { useEvents } from "@/hooks/use-events";
 import type { CalendarViewType } from "@/components/calendar/calendar-view";
 import { RealtimeChannel } from "@supabase/supabase-js";
+import { VIEW_OPTIONS } from "@/lib/constants";
 
 export default function CalendarPage() {
   const { supabase, session } = useSupabase();
@@ -353,7 +354,7 @@ export default function CalendarPage() {
                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary/50 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
               </h2>
             </div>
-            <div className="flex items-center gap-2 sm:hidden">
+            <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon"
@@ -367,7 +368,7 @@ export default function CalendarPage() {
                 <ChevronLeft className="h-4 w-4 relative z-10 group-hover:-translate-x-0.5 transition-transform" />
                 <span className="sr-only">Forrige måned</span>
               </Button>
-              <h2 className="text-lg font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent animate-in slide-in-from-left duration-300 min-w-[120px] text-center relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary/20">
+              <h2 className="lg:text-lg text-sm font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent animate-in slide-in-from-left duration-300 min-w-[120px] text-center relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary/20">
                 {format(selectedDate, "MMMM yyyy", { locale: da })}
               </h2>
               <Button
@@ -386,32 +387,37 @@ export default function CalendarPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              className="hidden sm:flex items-center gap-2 hover:bg-accent/50 transition-all duration-300 hover:scale-105 active:scale-95 group relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-primary/10 before:to-transparent before:translate-x-[-100%] before:group-hover:translate-x-[100%] before:transition-transform before:duration-500"
-              onClick={() => setSelectedDate(new Date())}
-            >
-              <Calendar className="h-4 w-4 group-hover:rotate-12 transition-transform duration-300 relative z-10" />
-              <span className="relative z-10">I dag</span>
-            </Button>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="hidden sm:block">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedDate(new Date())}
+                  className="print:hidden group relative overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <Calendar className="h-4 w-4 group-hover:rotate-12 transition-transform duration-300 relative z-10" />
+                  <span className="relative z-10">I dag</span>
+                </Button>
+              </div>
+            </div>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-10 w-10 hover:bg-accent/50 transition-all duration-300 hover:scale-105 active:scale-95 relative group overflow-hidden before:absolute before:inset-0 before:rounded-full before:bg-primary/5 before:scale-0 before:hover:scale-100 before:transition-transform before:duration-300"
+                    className="hidden lg:flex h-10 w-10 hover:bg-accent/50 transition-all duration-300 hover:scale-105 active:scale-95 relative group overflow-hidden before:absolute before:inset-0 before:rounded-full before:bg-primary/5 before:scale-0 before:hover:scale-100 before:transition-transform before:duration-300"
                     onClick={() =>
                       setTheme(theme === "light" ? "dark" : "light")
                     }
                   >
-                    <div className="absolute buttonsmall inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full" />
                     {theme === "light" ? (
-                      <Moon className="h-5 w-5 group-hover:-rotate-90 transition-transform duration-300 relative z-10 buttonsmall" />
+                      <Moon className="h-5 w-5 group-hover:-rotate-90 transition-transform duration-300 relative z-10 " />
                     ) : (
-                      <Sun className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300 relative z-10 buttonsmall" />
+                      <Sun className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300 relative z-10 " />
                     )}
                     <span className="sr-only">Skift tema</span>
                   </Button>
@@ -574,7 +580,7 @@ export default function CalendarPage() {
                     <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                       <span className="text-sm">Skift tema</span>
                       <span className="text-xs text-muted-foreground">
-                        Lys eller m��rkt tema
+                        Lys eller mørkt tema
                       </span>
                     </div>
                   </DropdownMenuItem>
