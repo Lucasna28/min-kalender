@@ -173,3 +173,9 @@ html {
     ),
     linear-gradient(to bottom, rgb(255 255 255 / 0.1) 1px, transparent 1px);
 }
+
+@media (min-width: 250px) and (max-width: 680px) {
+  .buttonsmall {
+    display: none;
+  }
+}

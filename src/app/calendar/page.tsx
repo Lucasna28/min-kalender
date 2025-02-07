@@ -328,7 +328,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background">
+    <div className="flex flex-col h-screen bg-background">
       <div className="flex-shrink-0 h-14 fixed top-0 left-0 right-0 z-50 bg-background/50 supports-[backdrop-filter]:bg-background/30 backdrop-blur-xl border-b border-border/40 shadow-sm">
         <div className="flex items-center justify-between h-full px-4 mx-auto w-full max-w-[2000px]">
           <div className="flex items-center gap-4 sm:ml-80">
@@ -407,11 +407,11 @@ export default function CalendarPage() {
                       setTheme(theme === "light" ? "dark" : "light")
                     }
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full" />
+                    <div className="absolute buttonsmall inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full" />
                     {theme === "light" ? (
-                      <Moon className="h-5 w-5 group-hover:-rotate-90 transition-transform duration-300 relative z-10" />
+                      <Moon className="h-5 w-5 group-hover:-rotate-90 transition-transform duration-300 relative z-10 buttonsmall" />
                     ) : (
-                      <Sun className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300 relative z-10" />
+                      <Sun className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300 relative z-10 buttonsmall" />
                     )}
                     <span className="sr-only">Skift tema</span>
                   </Button>
@@ -461,37 +461,16 @@ export default function CalendarPage() {
             <Button
               variant="default"
               size="sm"
-              className="hidden sm:flex items-center gap-2 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 bg-gradient-to-r from-primary to-primary/80 group relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-white/20 before:to-transparent before:translate-x-[-100%] before:group-hover:translate-x-[100%] before:transition-transform before:duration-500"
+              className="hidden buttonsmall sm:flex items-center gap-2 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 bg-gradient-to-r from-primary to-primary/80 group relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-white/20 before:to-transparent before:translate-x-[-100%] before:group-hover:translate-x-[100%] before:transition-transform before:duration-500"
               onClick={() => setIsCreateEventOpen(true)}
             >
-              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform duration-300 relative z-10" />
+              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 buttonsmall" />
+              <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform duration-300 relative z-10 buttonsmall" />
               <span className="relative z-10">
                 Ny begivenhed
                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white/50 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
               </span>
             </Button>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 sm:hidden hover:bg-accent/50 transition-all duration-300 hover:scale-105 active:scale-95 hover:rotate-90 relative group before:absolute before:inset-0 before:rounded-full before:bg-primary/5 before:scale-0 before:hover:scale-100 before:transition-transform before:duration-300"
-                    onClick={() => setIsCreateEventOpen(true)}
-                  >
-                    <Plus className="h-5 w-5 relative z-10" />
-                    <span className="sr-only">Opret begivenhed</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="bottom"
-                  className="bg-background/80 backdrop-blur-lg border border-border/40 shadow-lg animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
-                >
-                  <p>Opret ny begivenhed</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
             <DropdownMenu>
               <TooltipProvider>
                 <Tooltip>

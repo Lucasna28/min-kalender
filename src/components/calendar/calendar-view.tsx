@@ -207,7 +207,7 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
         : YearView;
 
     return (
-      <div ref={ref} className="flex flex-col h-full relative">
+      <div ref={ref} className="flex flex-col h-full sm:text-sm w-full">
         {/* Loading indikator */}
         <AnimatePresence>
           {isRefreshing && (
@@ -226,24 +226,26 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
         </AnimatePresence>
 
         <div className="flex items-center justify-between p-4 border-b">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full flex-1 xs:hidden">
             <Button
               variant="outline"
               size="icon"
               onClick={goToPreviousDate}
-              className="print:hidden"
+              className="print:hidden sm:hidden buttonsmall"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
+            <h2 className="text-lg text-center w-full sm:w-auto font-semibold buttonsmall">
+              {formatDateRange()}
+            </h2>
             <Button
               variant="outline"
               size="icon"
               onClick={goToNextDate}
-              className="print:hidden"
+              className="print:hidden sm:hidden buttonsmall"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <h2 className="text-lg font-semibold">{formatDateRange()}</h2>
           </div>
 
           <div className="flex items-center gap-2">

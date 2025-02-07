@@ -160,24 +160,23 @@ export function WeekView({ date, events, onDateChange }: WeekViewProps) {
           </button>
         </div>
 
-        {/* Ugedage header med heldagsbegivenheder */}
+        {/* Ugedage header */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
-          {/* Ugedage header */}
-          <div className="grid grid-cols-7 text-sm font-medium text-muted-foreground">
+          <div className="grid grid-cols-7 text-sm font-medium text-muted-foreground overflow-x-auto hide-scrollbar">
             {weekDays.map((day) => (
               <motion.div
                 key={day.toISOString()}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => onDateChange(day)}
                 className={cn(
-                  "p-2 flex flex-col items-center",
+                  "p-2 flex flex-col items-center min-w-[60px]",
                   "touch-manipulation border-r border-border/50",
                   !isSameMonth(day, date) && "bg-muted/30 print:bg-gray-50",
                   isToday(day) && "bg-primary/5 print:bg-transparent",
                   "hover:bg-accent/50 cursor-pointer group print:hover:bg-transparent"
                 )}
               >
-                <span className="text-[8px] xs:text-xs">
+                <span className="text-[8px] xs:text-xs truncate w-full text-center">
                   {format(day, "EEE", { locale: da })}
                 </span>
                 <span className="text-xs xs:text-base">{format(day, "d")}</span>
@@ -186,8 +185,8 @@ export function WeekView({ date, events, onDateChange }: WeekViewProps) {
           </div>
 
           {/* Heldagsbegivenheder sektion */}
-          <div className="border-t border-border/50">
-            <div className="grid grid-cols-7">
+          <div className="border-t border-border/50 overflow-x-auto hide-scrollbar">
+            <div className="grid grid-cols-7 min-w-[420px]">
               {weekDays.map((day) => {
                 const { allDayEvents } = getEventsForDay(day);
 
@@ -195,7 +194,7 @@ export function WeekView({ date, events, onDateChange }: WeekViewProps) {
                   <div
                     key={day.toISOString()}
                     className={cn(
-                      "p-1 border-r border-border/50",
+                      "p-1 border-r border-border/50 min-w-[60px]",
                       "min-h-[40px] max-h-[80px] overflow-y-auto",
                       !isSameMonth(day, date) && "bg-muted/30 print:bg-gray-50",
                       isToday(day) && "bg-primary/5 print:bg-transparent",
@@ -276,11 +275,6 @@ export function WeekView({ date, events, onDateChange }: WeekViewProps) {
                       "bg-primary/5"
                   )}
                 >
-                  {/* Tidsindikator i venstre side - removed */}
-                  {/* {/* <div className="absolute -left-2 -top-3 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                    {format(new Date().setHours(hour, 0), "HH:mm")}
-                  </div> */}
-
                   {/* Vis nuværende tid som baggrund på den aktuelle time */}
                   {isToday(day) && hour === new Date().getHours() && (
                     <div className="absolute inset-0 flex items-center justify-end pr-2">

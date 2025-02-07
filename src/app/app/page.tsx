@@ -66,23 +66,21 @@ export default function AppPage() {
           isSidebarOpen ? "lg:pl-64" : "lg:pl-0"
         )}
       >
-        <div className="h-full">
-          <CalendarView
-            view={view}
-            selectedDate={date}
-            onDateChange={setDate}
-            onViewChange={setView}
-            visibleCalendarIds={visibleCalendarIds}
-            onSidebarOpenChange={setIsSidebarOpen}
-            isCreateEventOpen={isCreateEventOpen}
-            onCreateEventOpenChange={setIsCreateEventOpen}
-            showHolidays={showHolidays}
-            events={events}
-            onEventCreate={createEvent}
-            onEventUpdate={updateEvent}
-            onEventDelete={deleteEvent}
-          />
-        </div>
+        <CalendarView
+          view={view}
+          selectedDate={date}
+          onDateChange={setDate}
+          onViewChange={setView}
+          visibleCalendarIds={visibleCalendarIds}
+          onSidebarOpenChange={setIsSidebarOpen}
+          isCreateEventOpen={isCreateEventOpen}
+          onCreateEventOpenChange={setIsCreateEventOpen}
+          showHolidays={showHolidays}
+          events={events}
+          onEventCreate={createEvent}
+          onEventUpdate={updateEvent}
+          onEventDelete={deleteEvent}
+        />
       </main>
       <EventDialog
         event={selectedEvent}
