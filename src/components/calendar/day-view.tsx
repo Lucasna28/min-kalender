@@ -12,6 +12,8 @@ import {
   isSameDay,
   isAfter,
   isBefore,
+  subDays,
+  addDays,
 } from "date-fns";
 import { da } from "date-fns/locale";
 import type { CalendarEvent } from "@/hooks/use-events";
@@ -20,6 +22,7 @@ import { EventItem } from "./event-item";
 import { motion, AnimatePresence } from "framer-motion";
 import { getDanishHolidays } from "@/lib/danish-holidays";
 import { cn } from "@/lib/utils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface DayViewProps {
   date: Date;
@@ -139,42 +142,34 @@ export function DayView({
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background print:bg-white">
-      {/* Header med heldagsbegivenheder */}
-      <div className="sticky top-0 z-10 flex-none bg-background border-b border-border print:border-gray-200">
-        <div className="grid grid-cols-1">
-          <div className="flex flex-col border-r border-border print:border-gray-200">
-            {/* Dato header */}
-            <div className="p-2 text-center border-b border-border print:border-gray-200">
-              <span className="text-sm print:text-base print:font-medium">
-                {format(date, "EEEE", { locale: da })}
-              </span>
-              <span className="text-sm print:text-base print:font-medium ml-1">
-                {format(date, "d. MMMM", { locale: da })}
-              </span>
-            </div>
-
-            {/* Heldagsbegivenheder */}
-            <div className="min-h-[60px] p-1 space-y-1">
-              {getAllDayEvents().map((event) => (
-                <EventItem
-                  key={event.id}
-                  event={event}
-                  className="text-xs p-1 rounded-sm shadow-sm print:text-sm print:p-1.5 print:rounded-md print:border print:shadow-none"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedEvent(event);
-                  }}
-                />
-              ))}
-            </div>
-          </div>
+      {/* Forbedret touch-venlig header */}
+      <motion.div
+        className="sticky top-0 z-10 flex-none bg-background border-b border-border"
+        whileTap={{ scale: 0.98 }}
+      >
+        <div className="p-4 flex justify-between items-center">
+          <button
+            onClick={() => onDateChange(subDays(date, 1))}
+            className="p-2 hover:bg-accent rounded-full touch-manipulation"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <h2 className="text-lg font-semibold">
+            {format(date, "EEEE d. MMMM", { locale: da })}
+          </h2>
+          <button
+            onClick={() => onDateChange(addDays(date, 1))}
+            className="p-2 hover:bg-accent rounded-full touch-manipulation"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Tidsgrid */}
+      {/* Forbedret touch-venlig tidsgrid */}
       <div
-        className="flex-1 grid grid-cols-[80px_1fr] overflow-y-auto relative bg-background/95 scroll-smooth"
         ref={timeGridRef}
+        className="flex-1 grid grid-cols-[80px_1fr] overflow-y-auto relative bg-background/95 scroll-smooth touch-pan-y"
       >
         {/* Tidslinje */}
         <div className="border-r border-border print:hidden">

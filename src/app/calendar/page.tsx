@@ -211,9 +211,9 @@ export default function CalendarPage() {
         )
         .subscribe((status) => {
           if (status === "SUBSCRIBED") {
-            console.log("Subscribed til notifikationer");
+            
           } else if (status === "CLOSED") {
-            console.log("Subscription til notifikationer lukket");
+            
           } else if (status === "CHANNEL_ERROR") {
             console.error("Fejl i notifikations channel");
             toast.error("Der opstod en fejl med notifikationer");
@@ -237,12 +237,12 @@ export default function CalendarPage() {
   useEffect(() => {
     const fetchCalendars = async () => {
       if (!session?.user?.id) {
-        console.log("Ingen bruger session");
+        
         return;
       }
 
       try {
-        console.log("Henter kalendere for bruger:", session.user.id);
+        
 
         // Hent både brugerens egne kalendere og delte kalendere
         const [ownCalendarsResponse, sharedCalendarsResponse] =
@@ -274,7 +274,7 @@ export default function CalendarPage() {
           sharedCalendarsResponse.data?.map((share) => share.calendars) || [];
 
         const allCalendars = [...ownCalendars, ...sharedCalendars];
-        console.log("Alle tilgængelige kalendere:", allCalendars);
+        
 
         if (!allCalendars.length) {
           // Opret standardkalender hvis ingen findes
@@ -293,7 +293,7 @@ export default function CalendarPage() {
 
           if (createError) throw createError;
 
-          console.log("Oprettede standardkalender:", newCalendar);
+          
           setVisibleCalendarIds([newCalendar.id]);
         } else {
           // Sæt synlige kalendere
@@ -301,7 +301,7 @@ export default function CalendarPage() {
             .filter((cal) => cal.is_visible)
             .map((cal) => cal.id);
 
-          console.log("Sætter synlige kalender IDs:", visibleIds);
+          
           setVisibleCalendarIds(visibleIds);
         }
       } catch (error) {

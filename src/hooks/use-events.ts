@@ -57,12 +57,12 @@ export function useEvents(visibleCalendarIds: string[]) {
       setIsLoading(true);
 
       if (!visibleCalendarIds.length) {
-        console.log("Ingen synlige kalendere");
+        
         setEvents([]);
         return;
       }
 
-      console.log("Henter events for kalendere:", visibleCalendarIds);
+      
 
       // Hent events
       const { data: events, error } = await supabase
@@ -75,7 +75,7 @@ export function useEvents(visibleCalendarIds: string[]) {
         return;
       }
 
-      console.log("Rå events fra databasen:", events);
+      
 
       // Konverter datoer og tilføj brugerdata
       const formattedEvents = events.map((event) => ({
@@ -97,7 +97,7 @@ export function useEvents(visibleCalendarIds: string[]) {
         end_time: event.end_time,
       }));
 
-      console.log("Formaterede events:", formattedEvents);
+      
       setEvents(formattedEvents);
     } catch (error) {
       console.error("Fejl ved hentning af begivenheder:", error);
@@ -123,7 +123,7 @@ export function useEvents(visibleCalendarIds: string[]) {
           table: "events",
         },
         (payload) => {
-          console.log("Event ændring modtaget:", payload);
+          
           // Genindlæs events når der sker ændringer
           fetchEvents();
         },
@@ -131,9 +131,9 @@ export function useEvents(visibleCalendarIds: string[]) {
       .subscribe((status) => {
         // Håndter kanal status
         if (status === "SUBSCRIBED") {
-          console.log("Tilsluttet events kanal");
+          
         } else if (status === "CLOSED") {
-          console.log("Events kanal lukket");
+          
         } else if (status === "CHANNEL_ERROR") {
           console.error(
             "Fejl i events kanal - prøver at genoprette forbindelse",
@@ -146,7 +146,7 @@ export function useEvents(visibleCalendarIds: string[]) {
       });
 
     return () => {
-      console.log("Lukker events kanal");
+      
       supabase.removeChannel(channel);
     };
   }, [supabase, fetchEvents]);
@@ -282,8 +282,8 @@ export function useEvents(visibleCalendarIds: string[]) {
 
   const logEventData = (rawData: CreateEventInput, formattedData: any) => {
     if (process.env.NODE_ENV === "development") {
-      console.log("Raw event data:", rawData);
-      console.log("Formatted event data:", formattedData);
+      
+      
       console.log("Calendar ID check:", {
         fromEventData: rawData.calendar_id,
         inEventToCreate: formattedData.calendar_id,

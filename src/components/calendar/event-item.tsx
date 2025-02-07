@@ -28,6 +28,7 @@ import { Pizzadag } from "./special-days/pizzadag";
 import confetti from "canvas-confetti";
 import { Palmesondag } from "./special-days/palmesondag";
 import { Event } from "@/types/calendar";
+import { vibrate } from "@/lib/haptics";
 
 interface EventItemProps {
   event: Event;
@@ -900,18 +901,28 @@ export function EventItem({
     );
   }
 
+  const handleClick = (e: React.MouseEvent) => {
+    vibrate(50);
+    onClick?.(e);
+  };
+
   return (
-    <div
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
       className={cn(
-        "flex items-center gap-2 rounded-md px-2 py-1 text-sm",
+        "p-2 rounded-md text-sm touch-manipulation",
         !event.allDay && "bg-primary text-primary-foreground",
         event.allDay && "bg-muted",
         className
       )}
-      style={{ backgroundColor: event.color }}
-      onClick={onClick}
+      style={{
+        backgroundColor: event.color,
+        ...style,
+      }}
+      onClick={handleClick}
     >
-      <span className="truncate">{event.title}</span>
-    </div>
+      <span className="font-medium">{event.title}</span>
+    </motion.div>
   );
 }

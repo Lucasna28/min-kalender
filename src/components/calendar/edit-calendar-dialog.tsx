@@ -163,8 +163,6 @@ export function EditCalendarDialog({
 
   const fetchSharedUsers = useCallback(async () => {
     try {
-      console.log("Henter invitationer for kalender:", calendar.id);
-
       const { data: shares, error: sharesError } = await supabase
         .from("calendar_shares")
         .select(

@@ -156,12 +156,12 @@ export function MonthView({
   onDateChange,
   showHolidays,
 }: MonthViewProps) {
-  console.log("MonthView render med events:", events);
+  
 
   useEffect(() => {
     if (events.length > 0) {
-      console.log("Events modtaget i MonthView:", events);
-      console.log("Første event format:", events[0]);
+      
+      
     }
   }, [events]);
 
@@ -195,7 +195,7 @@ export function MonthView({
         return;
       }
 
-      console.log("Redigerer event:", event);
+      
       setSelectedEvent(null);
     } catch (error) {
       console.error("Fejl ved redigering af event:", error);
@@ -211,7 +211,7 @@ export function MonthView({
         return;
       }
 
-      console.log("Sletter event:", eventId);
+      
       setSelectedEvent(null);
     } catch (error) {
       console.error("Fejl ved sletning af event:", error);
@@ -234,7 +234,7 @@ export function MonthView({
     // Almindelige events
     const regularEvents = events.filter((event) => {
       if (!event.start_date || !event.end_date) {
-        console.log("Event mangler start_date eller end_date:", event);
+        
         return false;
       }
 

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import CalendarSidebar from "@/components/layout/sidebar";
+import { motion } from "framer-motion";
 
 interface SidebarContainerProps {
   isOpen: boolean;
@@ -32,9 +33,10 @@ export function SidebarContainer({
         aria-label="Kalender navigation"
         className={cn(
           "fixed inset-y-0 left-0",
-          "w-72 bg-muted/50 backdrop-blur-xl border-r",
+          "w-[85vw] md:w-72 bg-muted/50 backdrop-blur-xl border-r",
           "transform transition-transform duration-300 ease-in-out",
-          "z-50",
+          "z-50 touch-manipulation",
+          "shadow-lg",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -57,11 +59,14 @@ export function SidebarContainer({
         </nav>
       </aside>
 
-      {/* Overlay for mobile only */}
+      {/* Forbedret overlay med touch feedback */}
       {isOpen && (
-        <div
+        <motion.div
           role="presentation"
           aria-hidden="true"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
           className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
           onClick={() => onOpenChange(false)}
         />

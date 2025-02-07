@@ -12,6 +12,7 @@ import {
   addDays,
   isAfter,
   isBefore,
+  subDays,
 } from "date-fns";
 import { da } from "date-fns/locale";
 import type { CalendarEvent } from "@/hooks/use-events";
@@ -21,6 +22,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getDanishHolidays, DanishHoliday } from "@/lib/danish-holidays";
 import { getWeekNumber } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface WeekViewProps {
   date: Date;
@@ -148,73 +150,56 @@ export function WeekView({ date, events, onDateChange }: WeekViewProps) {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-background print:bg-white print:h-auto">
-      {/* Header med ugedage og heldagsbegivenheder */}
-      <div className="sticky top-0 z-10 flex-none bg-background border-b border-border print:border-gray-200 print:pb-4">
-        <div className="grid grid-cols-8 print:grid-cols-7">
-          {/* Ugenummer - nu med samme størrelse som tidspunkterne */}
-          <div className="w-20 border-r border-border print:hidden flex flex-col justify-center items-center">
-            <span className="text-sm font-medium text-muted-foreground">
-              Uge
-            </span>
-            <span className="text-lg font-semibold">{weekNumber}</span>
-          </div>
-
-          {/* Print header med måned og ugenummer */}
-          <div className="hidden print:block print:col-span-7 print:text-center print:mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">
-              {weekDays[0] && format(weekDays[0], "MMMM yyyy", { locale: da })}
-              <span className="text-gray-600 font-medium text-lg ml-2">
-                · Uge {weekNumber}
-              </span>
-            </h1>
-          </div>
-
-          {/* Dage */}
-          <div className="col-span-7 grid grid-cols-7 text-sm leading-6 text-muted-foreground">
-            {weekDays.map((day, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "flex flex-col border-r border-border print:border-gray-200",
-                  isSameDay(day, new Date()) && "bg-primary/5"
-                )}
-                onClick={() => onDateChange(day)}
-              >
-                {/* Dato header */}
-                <div className="p-2 text-center border-b border-border print:border-gray-200 print:py-3">
-                  <div className="print:text-lg print:font-bold print:text-gray-900">
-                    {format(day, "EEEE", { locale: da })}
-                  </div>
-                  <div className="print:text-base print:font-medium print:text-gray-600 print:mt-1">
-                    {format(day, "d. MMM", { locale: da })}
-                  </div>
-                </div>
-
-                {/* Heldagsbegivenheder */}
-                <div className="min-h-[60px] p-1 space-y-1 print:min-h-[100px] print:p-3 print:space-y-2">
-                  {getAllDayEvents(day).map((event) => (
-                    <EventItem
-                      key={event.id}
-                      event={event}
-                      className="text-xs p-1 rounded-sm shadow-sm print:text-sm print:p-2.5 print:rounded-md print:border print:shadow-none print:font-medium"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedEvent(event);
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+    <div className="flex flex-col h-full bg-background print:bg-white">
+      {/* Touch-venlig uge navigation */}
+      <motion.div
+        className="sticky top-0 z-10 bg-background border-b border-border"
+        whileTap={{ scale: 0.98 }}
+      >
+        <div className="p-4 flex justify-between items-center">
+          <button
+            onClick={() => onDateChange(subDays(date, 7))}
+            className="p-2 hover:bg-accent rounded-full touch-manipulation"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <h2 className="text-lg font-semibold">
+            {format(weekDays[0], "d. MMM", { locale: da })} -{" "}
+            {format(weekDays[6], "d. MMM", { locale: da })}
+          </h2>
+          <button
+            onClick={() => onDateChange(addDays(date, 7))}
+            className="p-2 hover:bg-accent rounded-full touch-manipulation"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
         </div>
-      </div>
 
-      {/* Tidsgrid */}
+        {/* Ugedage header - mere touch-venlig */}
+        <div className="grid grid-cols-7 text-sm font-medium text-muted-foreground">
+          {weekDays.map((day) => (
+            <motion.button
+              key={day.toISOString()}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onDateChange(day)}
+              className={cn(
+                "p-2 flex flex-col items-center touch-manipulation",
+                isSameDay(day, new Date()) && "text-primary font-bold"
+              )}
+            >
+              <span className="text-xs">
+                {format(day, "EEE", { locale: da })}
+              </span>
+              <span className="text-base">{format(day, "d")}</span>
+            </motion.button>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Forbedret touch-venlig tidsgrid */}
       <div
-        className="flex-1 grid grid-cols-8 overflow-y-auto relative bg-background/95 scroll-smooth print:overflow-visible print:h-auto print:grid-cols-7 print:bg-white"
         ref={timeGridRef}
+        className="flex-1 grid grid-cols-8 overflow-y-auto relative bg-background/95 scroll-smooth touch-pan-y overscroll-none"
       >
         {/* Tidslinje */}
         <div className="border-r border-border print:hidden">
