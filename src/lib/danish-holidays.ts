@@ -384,6 +384,40 @@ export function getDanishHolidays(year: number): DanishHoliday[] {
     },
   );
 
+  // Tilføj fødselsdage til de eksisterende helligdage
+  const birthdays: DanishHoliday[] = [
+    {
+      title: "Lucas' fødselsdag 🎂",
+      date: new Date(year, 0, 7), // 7. januar
+      type: "birthday",
+      color: "#FF69B4", // Pink farve til fødselsdage
+    },
+    {
+      title: "Nilaus' fødselsdag 🎂",
+      date: new Date(year, 0, 2), // 2. januar
+      type: "birthday",
+      color: "#FF69B4",
+    },
+    {
+      title: "Fars fødselsdag 🎂",
+      date: new Date(year, 0, 21), // 21. januar
+      type: "birthday",
+      color: "#FF69B4",
+    },
+    {
+      title: "Moars fødselsdag 🎂",
+      date: new Date(year, 1, 9), // 9. februar
+      type: "birthday",
+      color: "#FF69B4",
+    },
+  ];
+
+  // Kombiner helligdage og fødselsdage
+  const combinedHolidays = [
+    ...holidays,
+    ...birthdays,
+  ];
+
   // Sorter datoerne kronologisk
-  return holidays.sort((a, b) => a.date.getTime() - b.date.getTime());
+  return combinedHolidays.sort((a, b) => a.date.getTime() - b.date.getTime());
 }
