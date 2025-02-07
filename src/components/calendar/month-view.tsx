@@ -282,29 +282,29 @@ export function MonthView({
 
   return (
     <div className="flex flex-col h-full bg-background print:bg-white">
-      {/* Ugedage header */}
-      <div className="grid grid-cols-7 text-sm font-medium text-muted-foreground border-b border-border print:border-gray-200">
-        {["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"].map((day, i) => (
+      {/* Ugedage header - endnu mere kompakt på mobile */}
+      <div className="grid grid-cols-7 text-xs sm:text-sm font-medium text-muted-foreground border-b border-border print:border-gray-200">
+        {["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"].map((day) => (
           <div
             key={day}
             className={cn(
-              "h-10 flex items-center justify-center border-r border-border print:border-gray-200 print:text-gray-600 print:font-semibold print:text-base",
-              // Vis kun første bogstav på små skærme
-              "sm:block",
-              "relative"
+              "h-8 sm:h-10 flex items-center justify-center",
+              "border-r border-border print:border-gray-200",
+              "print:text-gray-600 print:font-semibold print:text-base",
+              "px-0.5 sm:px-2"
             )}
           >
             <span className="hidden sm:block">{day}</span>
-            <span className="sm:hidden">{day[0]}</span>
+            <span className="sm:hidden">{day.slice(0, 1)}</span>
           </div>
         ))}
       </div>
 
-      {/* Kalendergrid */}
+      {/* Kalendergrid - endnu mindre celler på mobile */}
       <div
-        className="grid grid-cols-7 flex-1 print:gap-0"
+        className="grid grid-cols-7 flex-1 print:gap-0 overflow-hidden"
         style={{
-          gridTemplateRows: `repeat(${numberOfWeeks}, minmax(100px, 1fr))`,
+          gridTemplateRows: `repeat(${numberOfWeeks}, minmax(80px, 1fr))`,
         }}
       >
         {days.map((day, dayIdx) => {
@@ -317,59 +317,55 @@ export function MonthView({
             <div
               key={day.toISOString()}
               className={cn(
-                "border-r border-b border-border print:border-gray-200 relative transition-colors duration-200",
-                "min-h-[100px] sm:min-h-[120px]", // Mindre højde på mobile
+                "border-r border-b border-border print:border-gray-200",
+                "relative transition-colors duration-200",
+                "min-h-[80px] sm:min-h-[120px]",
+                "p-0.5 sm:p-2",
                 !isCurrentMonth && "bg-muted/30 print:bg-gray-50",
                 isToday(day) && "bg-primary/5 print:bg-transparent",
-                "hover:bg-accent/50 cursor-pointer group print:hover:bg-transparent"
+                "hover:bg-accent/50 cursor-pointer group print:hover:bg-transparent",
+                // Tilføj padding til venstre på første kolonne for ugenummer
+                dayIdx % 7 === 0 && "pl-4 sm:pl-0.5"
               )}
               onClick={() => onDateChange(day, { shouldOpenCreateEvent: true })}
             >
-              {/* Ugenummer - kun synlig på større skærme */}
-              {isFirstInWeek && (
-                <div className="hidden sm:block absolute -left-8 top-1 text-xs text-muted-foreground print:text-gray-500 print:font-medium">
-                  {weekNumber}
+              {/* Ugenummer - kompakt visning på mobile */}
+              {dayIdx % 7 === 0 && (
+                <div className="absolute left-0.5 top-0.5 text-[9px] sm:text-xs text-muted-foreground/70">
+                  {getWeekNumber(day)}
                 </div>
               )}
 
-              {/* Dato header */}
-              <div className="p-1 sm:p-2">
-                <div
-                  className={cn(
-                    "text-sm font-medium h-6 flex items-center justify-end px-1 print:text-base print:font-semibold",
-                    !isCurrentMonth &&
-                      "text-muted-foreground/50 italic print:text-gray-400",
-                    isToday(day) &&
-                      "text-primary font-bold print:text-inherit print:font-normal"
-                  )}
-                >
-                  {!isCurrentMonth && (
-                    <span className="text-xs mr-1 text-muted-foreground/40 print:text-gray-400 hidden sm:inline">
-                      {format(day, "MMM", { locale: da })}
-                    </span>
-                  )}
-                  {format(day, "d.")}
-                </div>
+              {/* Dato header - endnu mere kompakt */}
+              <div
+                className={cn(
+                  "text-xs sm:text-sm font-medium flex items-center justify-end",
+                  "h-4 sm:h-6",
+                  !isCurrentMonth && "text-muted-foreground/50 italic",
+                  isToday(day) && "text-primary font-bold"
+                )}
+              >
+                {format(day, "d")}
+              </div>
 
-                {/* Events liste - tilpasset til mobile */}
-                <div className="space-y-1 mt-1">
-                  {dayEvents.slice(0, 3).map((event) => (
-                    <EventItem
-                      key={event.id}
-                      event={event}
-                      className="text-xs truncate sm:text-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedEvent(event);
-                      }}
-                    />
-                  ))}
-                  {dayEvents.length > 3 && (
-                    <div className="text-xs text-muted-foreground px-1">
-                      +{dayEvents.length - 3} mere
-                    </div>
-                  )}
-                </div>
+              {/* Events liste - endnu mindre på mobile */}
+              <div className="space-y-0.5 mt-0.5">
+                {dayEvents.slice(0, 2).map((event) => (
+                  <EventItem
+                    key={event.id}
+                    event={event}
+                    className="text-[9px] leading-tight sm:text-xs truncate py-0.5 sm:py-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedEvent(event);
+                    }}
+                  />
+                ))}
+                {dayEvents.length > 2 && (
+                  <div className="text-[8px] sm:text-xs text-muted-foreground">
+                    +{dayEvents.length - 2}
+                  </div>
+                )}
               </div>
             </div>
           );

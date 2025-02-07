@@ -32,4 +32,26 @@
       overscroll-behavior-y: none;
     }
   }
+
+  /* Deaktiver browser swipe navigation */
+  html {
+    overscroll-behavior-x: none;
+    touch-action: pan-y pinch-zoom;
+  }
+
+  body {
+    /* Eksisterende styles... */
+
+    /* Deaktiver browser gestures */
+    overscroll-behavior-x: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y pinch-zoom;
+  }
+
+  /* Deaktiver pull-to-refresh */
+  @supports (-webkit-touch-callout: none) {
+    body {
+      overscroll-behavior-y: none;
+    }
+  }
 }

@@ -29,6 +29,7 @@ export default function ProtectedLayout({
     <div
       className={cn(
         "min-h-screen",
+        "max-w-screen overflow-x-hidden",
         isSidebarOpen && "lg:pl-72 overflow-hidden lg:overflow-auto"
       )}
     >

@@ -24,28 +24,26 @@ export default function RootLayout({
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no, shrink-to-fit=no, interactive-widget=resizes-content"
         />
-        <meta name="theme-color" content="#000000" />
+        <meta name="screen-orientation" content="portrait" />
+
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta
           name="apple-mobile-web-app-status-bar-style"
           content="black-translucent"
         />
-        <meta name="apple-mobile-web-app-title" content="Min Kalender" />
+        <meta name="theme-color" content="#000000" />
 
-        {/* Safari mobile web app styling */}
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-touch-fullscreen" content="yes" />
+        <meta name="format-detection" content="telephone=no" />
 
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
-
-        {/* Forhindre telefonnumre i at blive links */}
-        <meta name="format-detection" content="telephone=no" />
       </head>
       <body
         className={cn(
           "min-h-screen bg-background antialiased",
-          "min-h-[100dvh]", // Brug dynamic viewport height
+          "min-h-[100dvh]",
+          "max-w-screen overflow-x-hidden",
           inter.className
         )}
       >
