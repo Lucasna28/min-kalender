@@ -624,24 +624,6 @@ export default function CalendarPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <div className="flex-1 h-1 rounded-full bg-border/40 overflow-hidden">
-                      <div
-                        className={`h-full bg-primary rounded-full relative overflow-hidden transition-all duration-500 ${
-                          isLoading
-                            ? "w-1/3 animate-pulse"
-                            : `w-[${tutorialProgress}%]`
-                        }`}
-                      >
-                        <div className="absolute inset-0 bg-gradient-to-r from-primary/50 via-primary to-primary/50 animate-shimmer" />
-                      </div>
-                    </div>
-                    <span>
-                      {isLoading
-                        ? "Indlæser..."
-                        : `${tutorialProgress}% komplet`}
-                    </span>
-                  </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-border/40" />
                 <div className="p-2">

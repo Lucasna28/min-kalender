@@ -19,6 +19,8 @@ import { ViewEventDialog } from "./view-event-dialog";
 import { EventItem } from "./event-item";
 import { motion, AnimatePresence } from "framer-motion";
 import { getDanishHolidays, DanishHoliday } from "@/lib/danish-holidays";
+import { getWeekNumber } from "@/lib/date-utils";
+import { cn } from "@/lib/utils";
 
 interface WeekViewProps {
   date: Date;
@@ -26,20 +28,6 @@ interface WeekViewProps {
   isLoading: boolean;
   onDateChange: (date: Date) => void;
 }
-
-// Funktion til at få ugenummer - flyttet udenfor komponenten
-const getWeekNumber = (date: Date) => {
-  if (!date) return 1;
-  const target = new Date(date.valueOf());
-  const dayNr = (date.getDay() + 6) % 7;
-  target.setDate(target.getDate() - dayNr + 3);
-  const firstThursday = target.valueOf();
-  target.setMonth(0, 1);
-  if (target.getDay() !== 4) {
-    target.setMonth(0, 1 + ((4 - target.getDay() + 7) % 7));
-  }
-  return 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000);
-};
 
 export function WeekView({ date, events, onDateChange }: WeekViewProps) {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
@@ -52,10 +40,10 @@ export function WeekView({ date, events, onDateChange }: WeekViewProps) {
   // Beregn ugenummer og dage i ugen
   const weekNumber = getWeekNumber(date);
   const weekStart = startOfWeek(date, { weekStartsOn: 1 });
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   // Beregn tidspunkter og current time indicator
-  const timeSlots = Array.from({ length: 24 }, (_, i) => i);
+  const hours = Array.from({ length: 24 }, (_, i) => i);
   const [currentTimeIndicatorTop, setCurrentTimeIndicatorTop] = useState(0);
 
   // Opdater current time indicator position kun på client side
@@ -79,24 +67,32 @@ export function WeekView({ date, events, onDateChange }: WeekViewProps) {
     setMounted(true);
   }, []);
 
-  // Scroll til nuværende tid kun på client side
+  // Scroll til 12:00 som standard, eller til nuværende tid hvis det er i dag
   useEffect(() => {
     if (!mounted || !timeGridRef.current) return;
 
-    const scrollToCurrentTime = () => {
+    // Scroll til 12:00 som standard, eller til nuværende tid hvis det er i dag
+    const scrollToTime = () => {
       const now = new Date();
-      const minutes = now.getHours() * 60 + now.getMinutes();
-      const percentage = (minutes / (24 * 60)) * 100;
+      let scrollHour = 12; // Standard scroll til 12:00
+
+      // Hvis det er i dag og tiden er mellem 8:00 og 20:00, scroll til nuværende tid
+      if (isToday(date) && now.getHours() >= 8 && now.getHours() <= 20) {
+        scrollHour = now.getHours();
+      }
+
+      const percentage = (scrollHour / 24) * 100;
       const scrollPosition =
         (timeGridRef.current!.scrollHeight * percentage) / 100;
+
       timeGridRef.current!.scrollTo({
         top: scrollPosition - timeGridRef.current!.clientHeight / 2,
         behavior: "smooth",
       });
     };
 
-    scrollToCurrentTime();
-  }, [mounted]);
+    scrollToTime();
+  }, [mounted, date]);
 
   // Hent danske helligdage når året ændrer sig
   useEffect(() => {
@@ -107,10 +103,10 @@ export function WeekView({ date, events, onDateChange }: WeekViewProps) {
 
   const getEventsForDay = (day: Date) => {
     return events.filter((event) => {
+      if (event.is_all_day) return false; // Ignorer heldagsbegivenheder
       const eventStart = new Date(event.start_date);
       const eventEnd = new Date(event.end_date);
 
-      // Tjek om dagen er mellem start og slut (inklusiv)
       return (
         (isSameDay(eventStart, day) || isAfter(day, eventStart)) &&
         (isSameDay(eventEnd, day) || isBefore(day, eventEnd))
@@ -156,15 +152,18 @@ export function WeekView({ date, events, onDateChange }: WeekViewProps) {
       {/* Header med ugedage og heldagsbegivenheder */}
       <div className="sticky top-0 z-10 flex-none bg-background border-b border-border print:border-gray-200 print:pb-4">
         <div className="grid grid-cols-8 print:grid-cols-7">
-          {/* Ugenummer */}
-          <div className="w-20 border-r border-border print:hidden">
-            Uge {weekNumber}
+          {/* Ugenummer - nu med samme størrelse som tidspunkterne */}
+          <div className="w-20 border-r border-border print:hidden flex flex-col justify-center items-center">
+            <span className="text-sm font-medium text-muted-foreground">
+              Uge
+            </span>
+            <span className="text-lg font-semibold">{weekNumber}</span>
           </div>
 
           {/* Print header med måned og ugenummer */}
           <div className="hidden print:block print:col-span-7 print:text-center print:mb-4">
             <h1 className="text-2xl font-bold text-gray-900">
-              {days[0] && format(days[0], "MMMM yyyy", { locale: da })}
+              {weekDays[0] && format(weekDays[0], "MMMM yyyy", { locale: da })}
               <span className="text-gray-600 font-medium text-lg ml-2">
                 · Uge {weekNumber}
               </span>
@@ -173,10 +172,14 @@ export function WeekView({ date, events, onDateChange }: WeekViewProps) {
 
           {/* Dage */}
           <div className="col-span-7 grid grid-cols-7 text-sm leading-6 text-muted-foreground">
-            {days.map((day, i) => (
+            {weekDays.map((day, i) => (
               <div
                 key={i}
-                className="flex flex-col border-r border-border print:border-gray-200"
+                className={cn(
+                  "flex flex-col border-r border-border print:border-gray-200",
+                  isSameDay(day, new Date()) && "bg-primary/5"
+                )}
+                onClick={() => onDateChange(day)}
               >
                 {/* Dato header */}
                 <div className="p-2 text-center border-b border-border print:border-gray-200 print:py-3">
@@ -213,36 +216,53 @@ export function WeekView({ date, events, onDateChange }: WeekViewProps) {
         className="flex-1 grid grid-cols-8 overflow-y-auto relative bg-background/95 scroll-smooth print:overflow-visible print:h-auto print:grid-cols-7 print:bg-white"
         ref={timeGridRef}
       >
-        {/* Tidslinje - skjult ved print */}
+        {/* Tidslinje */}
         <div className="border-r border-border print:hidden">
-          {timeSlots.map((hour) => (
+          {hours.map((hour) => (
             <div
               key={hour}
               className="h-20 border-b border-border relative group"
             >
-              <span className="absolute -top-3 right-2 text-sm text-muted-foreground">
-                {hour}:00
-              </span>
+              <div className="absolute -top-3 right-2 text-sm text-muted-foreground flex items-center gap-1">
+                <span>{format(new Date().setHours(hour, 0), "HH:mm")}</span>
+              </div>
             </div>
           ))}
         </div>
 
         {/* Dage med events */}
-        {days.map((day) => (
+        {weekDays.map((day) => (
           <div
             key={day.toISOString()}
-            className="relative border-r border-border print:border-gray-200"
+            className={cn(
+              "relative border-r border-border print:border-gray-200",
+              isSameDay(day, new Date()) && "bg-primary/5"
+            )}
             onClick={() => onDateChange(day)}
           >
             {/* Timegrid */}
-            {timeSlots.map((hour) => (
+            {hours.map((hour) => (
               <div
                 key={hour}
-                className="h-20 border-b border-border print:border-gray-200 relative group print:h-28"
-              />
+                className={cn(
+                  "h-20 border-b border-border print:border-gray-200 relative group print:h-28",
+                  isToday(day) &&
+                    hour === new Date().getHours() &&
+                    "bg-primary/5"
+                )}
+              >
+                {/* Vis nuværende tid som baggrund på den aktuelle time */}
+                {isToday(day) && hour === new Date().getHours() && (
+                  <div className="absolute inset-0 flex items-center justify-end pr-2">
+                    <span className="text-sm font-medium text-primary">
+                      {format(new Date(), "HH:mm")}
+                    </span>
+                  </div>
+                )}
+              </div>
             ))}
 
-            {/* Events */}
+            {/* Events - kun ikke-heldagsbegivenheder */}
             {getEventsForDay(day).map((event) => {
               const [startHour, startMinute] = (event.start_time || "00:00")
                 .split(":")
@@ -275,21 +295,6 @@ export function WeekView({ date, events, onDateChange }: WeekViewProps) {
                 />
               );
             })}
-
-            {/* Current time indicator - skjult ved print */}
-            {isToday(day) && (
-              <motion.div
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                className="absolute left-0 right-0 z-50 print:hidden"
-                style={{ top: `${currentTimeIndicatorTop}%` }}
-              >
-                <div className="relative">
-                  <div className="absolute -left-1 -top-1 w-3 h-3 rounded-full bg-red-500 shadow-lg animate-pulse" />
-                  <div className="h-[2px] w-full bg-red-500 shadow-sm" />
-                </div>
-              </motion.div>
-            )}
           </div>
         ))}
       </div>

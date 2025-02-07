@@ -19,6 +19,7 @@ import { ViewEventDialog } from "./view-event-dialog";
 import { EventItem } from "./event-item";
 import { motion, AnimatePresence } from "framer-motion";
 import { getDanishHolidays } from "@/lib/danish-holidays";
+import { cn } from "@/lib/utils";
 
 interface DayViewProps {
   date: Date;
@@ -57,27 +58,34 @@ export function DayView({
     return () => clearInterval(interval);
   }, []);
 
-  // Scroll til nuværende tid
+  // Scroll til 12:00 som standard, eller til nuværende tid hvis det er i dag
   useEffect(() => {
-    const scrollToCurrentTime = () => {
-      if (!timeGridRef.current) return;
+    if (!timeGridRef.current) return;
 
+    const scrollToTime = () => {
       const now = new Date();
-      const minutes = now.getHours() * 60 + now.getMinutes();
-      const percentage = (minutes / (24 * 60)) * 100;
+      let scrollHour = 12; // Standard scroll til 12:00
+
+      // Hvis det er i dag og tiden er mellem 8:00 og 20:00, scroll til nuværende tid
+      if (isToday(date) && now.getHours() >= 8 && now.getHours() <= 20) {
+        scrollHour = now.getHours();
+      }
+
+      const percentage = (scrollHour / 24) * 100;
       const scrollPosition =
         (timeGridRef.current.scrollHeight * percentage) / 100;
+
       timeGridRef.current.scrollTo({
         top: scrollPosition - timeGridRef.current.clientHeight / 2,
         behavior: "smooth",
       });
     };
 
-    scrollToCurrentTime();
-  }, []);
+    scrollToTime();
+  }, [date]);
 
-  // Generer timer (24 timer i stedet for 48 halvtimer)
-  const timeSlots = Array.from({ length: 24 }, (_, i) => i);
+  // Generer timer (24 timer)
+  const hours = Array.from({ length: 24 }, (_, i) => i);
 
   // Få events for denne dag
   const getEventsForDay = () => {
@@ -165,23 +173,47 @@ export function DayView({
 
       {/* Tidsgrid */}
       <div
-        className="flex-1 grid grid-cols-1 overflow-y-auto relative bg-background/95 scroll-smooth"
+        className="flex-1 grid grid-cols-[80px_1fr] overflow-y-auto relative bg-background/95 scroll-smooth"
         ref={timeGridRef}
       >
         {/* Tidslinje */}
-        <div className="border-r border-border/50">
-          {timeSlots.map((hour) => (
+        <div className="border-r border-border print:hidden">
+          {hours.map((hour) => (
             <div
               key={hour}
-              className="h-20 relative flex items-center border-t border-border/40"
+              className="h-20 border-b border-border relative group"
+            >
+              <div className="absolute -top-3 right-2 text-sm text-muted-foreground flex items-center gap-1">
+                <span>{format(new Date().setHours(hour, 0), "HH:mm")}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Events grid */}
+        <div className="relative">
+          {hours.map((hour) => (
+            <div
+              key={hour}
+              className={cn(
+                "h-20 border-b border-border relative group",
+                isToday(date) &&
+                  hour === new Date().getHours() &&
+                  "bg-primary/5"
+              )}
               onClick={() => {
                 const selectedDate = setMinutes(setHours(date, hour), 0);
                 onDateChange(selectedDate, { shouldOpenCreateEvent: true });
               }}
             >
-              <span className="absolute left-2 text-xs text-muted-foreground font-medium">
-                {format(setHours(new Date(), hour), "HH:mm")}
-              </span>
+              {/* Vis nuværende tid som baggrund på den aktuelle time */}
+              {isToday(date) && hour === new Date().getHours() && (
+                <div className="absolute inset-0 flex items-center justify-end pr-2">
+                  <span className="text-sm font-medium text-primary">
+                    {format(new Date(), "HH:mm")}
+                  </span>
+                </div>
+              )}
 
               {/* Events for denne time */}
               {getEventsForDay()
@@ -216,7 +248,7 @@ export function DayView({
                   const startMinutes = startHour * 60 + startMinute;
                   const endMinutes = endHour * 60 + endMinute;
 
-                  const pixelsPerMinute = 80 / 60; // 80px per time / 60 minutter
+                  const pixelsPerMinute = 80 / 60;
                   const top = (startMinutes - hour * 60) * pixelsPerMinute;
                   const height = (endMinutes - startMinutes) * pixelsPerMinute;
 
@@ -224,7 +256,7 @@ export function DayView({
                     <EventItem
                       key={event.id}
                       event={event}
-                      className="absolute left-8 right-1 rounded-md shadow-sm z-10"
+                      className="absolute left-2 right-2 rounded-md shadow-sm z-10"
                       style={{
                         top: `${top}px`,
                         height: `${height}px`,
@@ -239,21 +271,6 @@ export function DayView({
                 })}
             </div>
           ))}
-
-          {/* Current time indicator */}
-          {isToday(date) && (
-            <motion.div
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              className="absolute left-0 right-0 z-50 print:hidden"
-              style={{ top: `${currentTimeIndicatorTop}%` }}
-            >
-              <div className="relative">
-                <div className="absolute -left-1 -top-1 w-3 h-3 rounded-full bg-red-500 shadow-lg animate-pulse" />
-                <div className="h-[2px] w-full bg-red-500 shadow-sm" />
-              </div>
-            </motion.div>
-          )}
         </div>
       </div>
 

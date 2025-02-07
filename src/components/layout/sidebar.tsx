@@ -41,6 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { da } from "date-fns/locale";
 
 interface Calendar {
   id: string;
@@ -267,6 +268,12 @@ export default function CalendarSidebar({
     handlePrint();
   };
 
+  const handleDateSelect = (date: Date) => {
+    onDateChange(date);
+    // Skift til dagvisning når en specifik dato vælges
+    onViewChange("day");
+  };
+
   return (
     <>
       <AnimatePresence>
@@ -325,7 +332,7 @@ export default function CalendarSidebar({
           >
             <span className="relative z-10 flex items-center">
               <Plus className="h-3 w-3 mr-1" />
-              Ny
+              Opret ny kalender
             </span>
             <span className="absolute inset-0 bg-primary/5 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform" />
           </Button>
@@ -361,218 +368,246 @@ export default function CalendarSidebar({
 
         <SidebarContent className="p-0 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20 scrollbar-track-transparent">
           {/* Mini kalender */}
-          <div className="px-2 py-1.5 border-b">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => date && onDateChange(date)}
-              className="w-full select-none"
-              formatters={{
-                formatWeekday: (date) => {
-                  const days = ["m", "t", "o", "t", "f", "l", "s"];
-                  return days[date.getDay() === 0 ? 6 : date.getDay() - 1];
-                },
-              }}
-              classNames={{
-                months: "space-y-0",
-                month: "space-y-2",
-                caption: "flex justify-between items-center mb-1.5 relative",
-                caption_label: "text-xs font-medium tracking-wide opacity-70",
-                nav: "flex items-center gap-0.5 absolute right-0",
-                nav_button:
-                  "h-5 w-5 bg-transparent p-0 opacity-40 hover:opacity-100 hover:text-primary transition-all",
-                nav_button_previous: "",
-                nav_button_next: "",
-                table: "w-full border-collapse",
-                head_row: "flex mb-1",
-                head_cell:
-                  "text-muted-foreground/40 text-[10px] w-7 uppercase tracking-wider font-medium",
-                row: "flex w-full mt-1 first:mt-0",
-                cell: cn(
-                  "relative p-0 text-center text-[13px] w-7",
-                  "first:[&:not(:has([aria-disabled='true']))]:text-rose-500/40 last:[&:not(:has([aria-disabled='true']))]:text-rose-500/40"
-                ),
-                day: cn(
-                  "h-6 w-6 p-0 font-normal mx-auto",
-                  "hover:bg-primary/10 hover:text-primary rounded-full transition-colors",
-                  "aria-selected:opacity-100"
-                ),
-                day_selected: cn(
-                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
-                  "rounded-full"
-                ),
-                day_today: cn(
-                  "font-medium text-primary",
-                  "after:absolute after:bottom-0.5 after:left-1/2 after:-translate-x-1/2",
-                  "after:h-0.5 after:w-0.5 after:rounded-full after:bg-primary"
-                ),
-                day_outside:
-                  "text-muted-foreground/10 hover:bg-transparent pointer-events-none",
-                day_disabled:
-                  "text-muted-foreground/10 hover:bg-transparent pointer-events-none",
-                day_hidden: "invisible",
-                day_range_middle: "rounded-none",
-                day_range_end: "rounded-r-full",
-                day_range_start: "rounded-l-full",
-              }}
-              components={{
-                IconLeft: ({ ...props }) => (
-                  <ChevronLeft className="h-3 w-3" {...props} />
-                ),
-                IconRight: ({ ...props }) => (
-                  <ChevronRight className="h-3 w-3" {...props} />
-                ),
-              }}
-            />
-          </div>
-
-          {/* Visningsindstillinger */}
-          <div className="px-2 py-1.5 border-b">
-            <h3 className="text-[11px] font-medium mb-1.5 px-1.5 text-muted-foreground/70 uppercase tracking-wider">
-              Visning
-            </h3>
-            <div className="space-y-0.5">
-              {Object.entries(VIEW_OPTIONS).map(
-                ([key, { icon: Icon, label }]) => (
-                  <Button
-                    key={key}
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                      "w-full justify-start h-7 px-1.5 text-xs transition-colors",
-                      "hover:bg-primary/10 hover:text-primary",
-                      view === key && "bg-primary/10 text-primary font-medium"
-                    )}
-                    onClick={() => onViewChange(key as CalendarViewType)}
-                  >
-                    <Icon className="h-3.5 w-3.5 mr-1.5 opacity-70" />
-                    {label}
-                  </Button>
-                )
-              )}
-            </div>
-          </div>
-
-          {/* Kalenderliste */}
-          <div className="px-2 py-1.5">
-            <div className="flex items-center justify-between mb-1.5 px-1.5">
-              <h3 className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider">
-                Mine Kalendere
-              </h3>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5 rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
-                onClick={() => setIsCreateCalendarOpen(true)}
-              >
-                <Plus className="h-3 w-3" />
-              </Button>
-            </div>
+          <div className="px-2 py-2">
             <div className="space-y-4">
-              <div className="space-y-1">
-                {calendars
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .map((calendar) => {
-                    const isVisible = visibleCalendarIds.includes(calendar.id);
-                    const isSelected = selectedCalendarId === calendar.id;
+              <div className="space-y-2">
+                <div className="flex items-center justify-between px-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={goToPreviousDate}
+                    className="h-7 w-7"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={goToToday}
+                    className="h-7 text-xs px-2"
+                  >
+                    I dag
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={goToNextDate}
+                    className="h-7 w-7"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
 
-                    return (
-                      <div
-                        key={calendar.id}
-                        className={cn(
-                          "group flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary",
-                          isSelected && "bg-primary/10 text-primary"
-                        )}
-                        onClick={() => handleCalendarClick(calendar.id)}
-                      >
-                        <Checkbox
-                          checked={isVisible}
-                          onCheckedChange={() =>
-                            toggleCalendarVisibility(calendar.id, isVisible)
-                          }
-                          onClick={(e) => e.stopPropagation()}
-                          className="data-[state=checked]:bg-[var(--calendar-color)] data-[state=checked]:border-[var(--calendar-color)]"
-                          style={
-                            {
-                              "--calendar-color": calendar.color,
-                            } as React.CSSProperties
-                          }
-                        />
-                        <span className="flex-1 truncate">{calendar.name}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-5 w-5 opacity-0 group-hover:opacity-100 rounded-full hover:bg-primary/10 hover:text-primary transition-all"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedCalendarForEdit(calendar);
-                          }}
-                        >
-                          <Settings className="h-2.5 w-2.5" />
-                        </Button>
-                      </div>
-                    );
-                  })}
-              </div>
-            </div>
-          </div>
-
-          <SidebarSection title="Helligdage">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium">
-                <Checkbox
-                  checked={showHolidays}
-                  onCheckedChange={(checked) => {
-                    if (typeof onShowHolidaysChange === "function") {
-                      onShowHolidaysChange(!!checked);
-                    }
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && handleDateSelect(date)}
+                  className="w-full"
+                  locale={da}
+                  showOutsideDays={true}
+                  classNames={{
+                    months: "space-y-0",
+                    month: "space-y-2",
+                    caption: "flex justify-center pt-1 relative items-center",
+                    caption_label: "text-sm font-medium",
+                    nav: "space-x-1 flex items-center",
+                    nav_button: cn(
+                      "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+                    ),
+                    nav_button_previous: "absolute left-1",
+                    nav_button_next: "absolute right-1",
+                    table: "w-full border-collapse space-y-1",
+                    head_row: "flex",
+                    head_cell:
+                      "text-muted-foreground rounded-md w-8 font-normal text-[0.8rem]",
+                    row: "flex w-full mt-2",
+                    cell: cn(
+                      "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent/50",
+                      "[&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected].day-outside)]:text-muted-foreground [&:has([aria-selected].day-outside)]:opacity-50"
+                    ),
+                    day: cn(
+                      "h-8 w-8 p-0 font-normal aria-selected:opacity-100",
+                      "hover:bg-accent hover:text-accent-foreground rounded-full transition-colors"
+                    ),
+                    day_selected: cn(
+                      "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+                      "rounded-full"
+                    ),
+                    day_today: cn(
+                      "bg-accent text-accent-foreground",
+                      "rounded-full"
+                    ),
+                    day_outside: cn(
+                      "text-muted-foreground/50",
+                      "hover:bg-accent/50 hover:text-accent-foreground/50"
+                    ),
+                    day_disabled: "text-muted-foreground opacity-50",
+                    day_range_middle:
+                      "aria-selected:bg-accent aria-selected:text-accent-foreground",
+                    day_hidden: "invisible",
+                  }}
+                  components={{
+                    IconLeft: ({ ...props }) => (
+                      <ChevronLeft className="h-4 w-4" {...props} />
+                    ),
+                    IconRight: ({ ...props }) => (
+                      <ChevronRight className="h-4 w-4" {...props} />
+                    ),
                   }}
                 />
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4" />
-                  <span>Helligdage</span>
+              </div>
+
+              {/* Visningsindstillinger */}
+              <div className="px-2 py-1.5 border-b">
+                <h3 className="text-[11px] font-medium mb-1.5 px-1.5 text-muted-foreground/70 uppercase tracking-wider">
+                  Visning
+                </h3>
+                <div className="space-y-0.5">
+                  {Object.entries(VIEW_OPTIONS).map(
+                    ([key, { icon: Icon, label }]) => (
+                      <Button
+                        key={key}
+                        variant="ghost"
+                        size="sm"
+                        className={cn(
+                          "w-full justify-start h-7 px-1.5 text-xs transition-colors",
+                          "hover:bg-primary/10 hover:text-primary",
+                          view === key &&
+                            "bg-primary/10 text-primary font-medium"
+                        )}
+                        onClick={() => onViewChange(key as CalendarViewType)}
+                      >
+                        <Icon className="h-3.5 w-3.5 mr-1.5 opacity-70" />
+                        {label}
+                      </Button>
+                    )
+                  )}
                 </div>
               </div>
+
+              {/* Kalenderliste */}
+              <div className="px-2 py-1.5">
+                <div className="flex items-center justify-between mb-1.5 px-1.5">
+                  <h3 className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider">
+                    Mine Kalendere
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
+                    onClick={() => setIsCreateCalendarOpen(true)}
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    {calendars
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((calendar) => {
+                        const isVisible = visibleCalendarIds.includes(
+                          calendar.id
+                        );
+                        const isSelected = selectedCalendarId === calendar.id;
+
+                        return (
+                          <div
+                            key={calendar.id}
+                            className={cn(
+                              "group flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary",
+                              isSelected && "bg-primary/10 text-primary"
+                            )}
+                            onClick={() => handleCalendarClick(calendar.id)}
+                          >
+                            <Checkbox
+                              checked={isVisible}
+                              onCheckedChange={() =>
+                                toggleCalendarVisibility(calendar.id, isVisible)
+                              }
+                              onClick={(e) => e.stopPropagation()}
+                              className="data-[state=checked]:bg-[var(--calendar-color)] data-[state=checked]:border-[var(--calendar-color)]"
+                              style={
+                                {
+                                  "--calendar-color": calendar.color,
+                                } as React.CSSProperties
+                              }
+                            />
+                            <span className="flex-1 truncate">
+                              {calendar.name}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 opacity-0 group-hover:opacity-100 rounded-full hover:bg-primary/10 hover:text-primary transition-all"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedCalendarForEdit(calendar);
+                              }}
+                            >
+                              <Settings className="h-2.5 w-2.5" />
+                            </Button>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              </div>
+
+              <SidebarSection title="Helligdage">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium">
+                    <Checkbox
+                      checked={showHolidays}
+                      onCheckedChange={(checked) => {
+                        if (typeof onShowHolidaysChange === "function") {
+                          onShowHolidaysChange(!!checked);
+                        }
+                      }}
+                    />
+                    <div className="flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4" />
+                      <span>Helligdage</span>
+                    </div>
+                  </div>
+                </div>
+              </SidebarSection>
+            </div>
+          </div>
+
+          <SidebarSection title="Print sektion">
+            <div className="space-y-2">
+              <Select
+                value={printView}
+                onValueChange={(value: "day" | "week" | "month") =>
+                  setPrintView(value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Vælg visning" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="day">Dag</SelectItem>
+                  <SelectItem value="week">Uge</SelectItem>
+                  <SelectItem value="month">Måned</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handlePrintClick}
+              >
+                <CalendarIcon className="h-4 w-4 mr-2" />
+                Print{" "}
+                {printView === "day"
+                  ? "dag"
+                  : printView === "week"
+                  ? "uge"
+                  : "måned"}
+              </Button>
             </div>
           </SidebarSection>
         </SidebarContent>
 
         <Separator className="my-4" />
-
-        {/* Print sektion */}
-        <div className="px-4 space-y-4">
-          <h3 className="font-medium">Print kalender</h3>
-          <div className="space-y-2">
-            <Select
-              value={printView}
-              onValueChange={(value: "day" | "week" | "month") =>
-                setPrintView(value)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Vælg visning" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="day">Dag</SelectItem>
-                <SelectItem value="week">Uge</SelectItem>
-                <SelectItem value="month">Måned</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={handlePrintClick}
-            >
-              <CalendarIcon className="h-4 w-4 mr-2" />
-              Print{" "}
-              {printView === "day"
-                ? "dag"
-                : printView === "week"
-                ? "uge"
-                : "måned"}
-            </Button>
-          </div>
-        </div>
 
         <SidebarFooter className="border-t flex-shrink-0">
           <div className="p-2 space-y-2">
