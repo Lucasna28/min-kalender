@@ -38,6 +38,9 @@ import {
 import { X, Info, Users, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 // Kalendertyper
 const CALENDAR_TYPES = [
@@ -84,14 +87,24 @@ const PREDEFINED_COLORS = [
   "#795548", // Brun
 ] as const;
 
+// Først tilføjer vi calendarSchema
+const calendarSchema = z.object({
+  name: z.string().min(1, "Navn er påkrævet"),
+  description: z.string().optional(),
+  color: z.string(),
+  type: z.string(),
+});
+
 interface CreateCalendarDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  onCalendarCreated?: (calendar: any) => void;
 }
 
 export function CreateCalendarDialog({
   isOpen,
   onOpenChange,
+  onCalendarCreated,
 }: CreateCalendarDialogProps) {
   const { toast } = useToast();
   const { supabase } = useSupabase();
@@ -107,6 +120,17 @@ export function CreateCalendarDialog({
   const [inviteEmail, setInviteEmail] = useState("");
   const selectedPermission = "view";
   const [isLoading, setIsLoading] = useState(false);
+
+  // Tilføj form
+  const form = useForm<z.infer<typeof calendarSchema>>({
+    resolver: zodResolver(calendarSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      color: CALENDAR_TYPES[0].color,
+      type: "personal",
+    },
+  });
 
   const handleTypeChange = (newType: string) => {
     setType(newType);
@@ -161,81 +185,84 @@ export function CreateCalendarDialog({
     return true;
   };
 
-  const handleCreate = async () => {
-    if (!validateForm()) return;
-
-    setIsLoading(true);
+  const handleCreate = async (data: z.infer<typeof calendarSchema>) => {
     try {
+      setIsLoading(true);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error("Du skal være logget ind for at oprette en kalender");
+      }
+
+      // Opret kalender
       const { data: calendar, error: createError } = await supabase
         .from("calendars")
         .insert([
           {
-            name,
-            description,
-            color,
-            type,
+            name: data.name,
+            description: data.description || "",
+            color: data.color,
+            type: "personal",
             is_visible: true,
             is_public: false,
-            show_in_search: showInSearch,
-            allow_invites: allowInvites,
+            show_in_search: false,
+            allow_invites: true,
+            user_id: user.id,
           },
         ])
         .select()
         .single();
 
       if (createError) {
-        console.error("Fejl ved oprettelse af kalender:", createError);
+        console.error("Fejl ved oprettelse af kalender:", {
+          error: createError,
+          errorMessage: createError.message,
+          details: createError.details,
+          hint: createError.hint,
+        });
+
+        let errorMessage = "Der skete en fejl ved oprettelse af kalenderen";
+
+        // Specifik fejlhåndtering
+        if (createError.code === "23505") {
+          errorMessage = "Du har allerede en kalender med dette navn";
+        } else if (createError.code === "42501") {
+          errorMessage = "Du har ikke tilladelse til at oprette kalendere";
+        }
+
         toast({
           title: "Fejl ved oprettelse",
-          description: "Der skete en fejl ved oprettelse af kalenderen",
+          description: errorMessage,
           variant: "destructive",
         });
         return;
       }
 
-      // Opret invitationer
-      if (invitations.length > 0 && calendar) {
-        const { error: shareError } = await supabase.rpc(
-          "share_calendar_with_users",
-          {
-            calendar_id: calendar.id,
-            user_emails: invitations.map((inv) => ({
-              email: inv.email,
-              permission: inv.permission,
-            })),
-          }
-        );
-
-        if (shareError) {
-          console.error("Fejl ved deling af kalender:", shareError);
-          toast({
-            title: "Fejl ved deling",
-            description:
-              "Kalenderen blev oprettet, men der skete en fejl ved deling",
-            variant: "destructive",
-          });
-        }
+      if (!calendar) {
+        throw new Error("Ingen kalender returneret efter oprettelse");
       }
 
       toast({
         title: "Kalender oprettet",
-        description: "Din nye kalender er blevet oprettet",
+        description: "Din nye kalender er klar til brug",
       });
 
-      // Nulstil form
-      setName("");
-      setDescription("");
-      setType("personal");
-      setColor(CALENDAR_TYPES[0].color);
-      setInvitations([]);
-      setShowInSearch(false);
-      setAllowInvites(true);
       onOpenChange(false);
+      form.reset();
+
+      // Opdater UI med den nye kalender
+      if (onCalendarCreated) {
+        onCalendarCreated(calendar);
+      }
     } catch (error) {
-      console.error("Uventet fejl:", error);
+      console.error("Uventet fejl ved oprettelse af kalender:", error);
       toast({
-        title: "Uventet fejl",
-        description: "Der skete en uventet fejl",
+        title: "Fejl",
+        description:
+          error instanceof Error ? error.message : "Der skete en uventet fejl",
         variant: "destructive",
       });
     } finally {
@@ -262,10 +289,14 @@ export function CreateCalendarDialog({
                 <Input
                   id="name"
                   placeholder="F.eks. Familie eller Arbejde"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  {...form.register("name")}
                   className="h-11"
                 />
+                {form.formState.errors.name && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.name.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -273,8 +304,7 @@ export function CreateCalendarDialog({
                 <Textarea
                   id="description"
                   placeholder="Beskriv hvad kalenderen skal bruges til..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  {...form.register("description")}
                   className="resize-none"
                   rows={3}
                 />
@@ -284,7 +314,18 @@ export function CreateCalendarDialog({
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Type</Label>
-                <Select value={type} onValueChange={handleTypeChange}>
+                <Select
+                  onValueChange={(value) => {
+                    form.setValue("type", value);
+                    const selectedType = CALENDAR_TYPES.find(
+                      (t) => t.id === value
+                    );
+                    if (selectedType) {
+                      form.setValue("color", selectedType.color);
+                    }
+                  }}
+                  value={form.getValues("type")}
+                >
                   <SelectTrigger className="h-11">
                     <SelectValue />
                   </SelectTrigger>
@@ -312,10 +353,10 @@ export function CreateCalendarDialog({
                     <button
                       key={presetColor}
                       type="button"
-                      onClick={() => setColor(presetColor)}
+                      onClick={() => form.setValue("color", presetColor)}
                       className={cn(
                         "w-8 h-8 rounded-full transition-all duration-200 hover:scale-110",
-                        color === presetColor &&
+                        form.getValues("color") === presetColor &&
                           "ring-2 ring-primary ring-offset-2"
                       )}
                       style={{ backgroundColor: presetColor }}
@@ -326,8 +367,7 @@ export function CreateCalendarDialog({
                     <input
                       type="color"
                       id="color"
-                      value={color}
-                      onChange={(e) => setColor(e.target.value)}
+                      {...form.register("color")}
                       className="w-8 h-8 rounded-full cursor-pointer border-2 border-border opacity-0 absolute inset-0"
                     />
                     <div
@@ -508,7 +548,11 @@ export function CreateCalendarDialog({
           >
             Annuller
           </Button>
-          <Button onClick={handleCreate} disabled={isLoading} className="h-11">
+          <Button
+            onClick={form.handleSubmit(handleCreate)}
+            disabled={isLoading}
+            className="h-11"
+          >
             {isLoading ? "Opretter..." : "Opret kalender"}
           </Button>
         </DialogFooter>
