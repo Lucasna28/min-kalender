@@ -50,106 +50,89 @@ type EventCategory =
 export function useEvents(visibleCalendarIds: string[]) {
   const { supabase } = useSupabase();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Definer fetchEvents først så vi kan bruge det i realtime subscription
   const fetchEvents = useCallback(async () => {
     try {
       setIsLoading(true);
 
       if (!visibleCalendarIds.length) {
-        
         setEvents([]);
         return;
       }
 
-      
-
-      // Hent events
+      // Hent events for de synlige kalendere
       const { data: events, error } = await supabase
-        .from("accessible_events")
+        .from("events")
         .select("*")
         .in("calendar_id", visibleCalendarIds);
 
       if (error) {
-        console.error("Fejl ved hentning af begivenheder:", error);
+        console.error("Fejl ved hentning af events:", error);
         return;
       }
 
-      
-
-      // Konverter datoer og tilføj brugerdata
-      const formattedEvents = events.map((event) => ({
-        id: event.id,
-        title: event.title,
-        description: event.description,
-        start_date: new Date(
-          event.start_date + (event.is_all_day ? "" : "T" + event.start_time),
-        ),
-        end_date: new Date(
-          event.end_date + (event.is_all_day ? "" : "T" + event.end_time),
-        ),
-        is_all_day: event.is_all_day,
-        user_id: event.user_id,
-        calendar_id: event.calendar_id,
-        color: event.color,
-        location: event.location,
-        start_time: event.start_time,
-        end_time: event.end_time,
-      }));
-
-      
-      setEvents(formattedEvents);
+      if (events?.length > 0) {
+        const formattedEvents = events.map((event) => ({
+          ...event,
+          start_date: new Date(event.start_date),
+          end_date: new Date(event.end_date),
+        }));
+        setEvents(formattedEvents);
+      } else {
+        setEvents([]);
+      }
     } catch (error) {
-      console.error("Fejl ved hentning af begivenheder:", error);
+      console.error("Uventet fejl ved hentning af events:", error);
     } finally {
       setIsLoading(false);
     }
   }, [supabase, visibleCalendarIds]);
 
-  // Hent events når komponenten monteres eller når synlige kalendere ændres
+  // Realtime subscription
+  useEffect(() => {
+    let channel: RealtimeChannel;
+
+    const setupRealtimeSubscription = async () => {
+      try {
+        if (channel) {
+          await channel.unsubscribe();
+        }
+
+        channel = supabase
+          .channel("events-changes")
+          .on("postgres_changes", {
+            event: "*",
+            schema: "public",
+            table: "events",
+          }, (payload) => {
+            console.log("Realtime update:", payload);
+            fetchEvents(); // Brug fetchEvents i stedet for refetch
+          })
+          .subscribe((status) => {
+            if (status === "SUBSCRIBED") {
+              console.log("Realtime subscription active");
+            }
+          });
+      } catch (error) {
+        console.error("Fejl ved opsætning af realtime:", error);
+      }
+    };
+
+    setupRealtimeSubscription();
+
+    return () => {
+      if (channel) {
+        channel.unsubscribe();
+      }
+    };
+  }, [supabase, fetchEvents]); // Brug fetchEvents i dependency array
+
+  // Initial fetch
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
-
-  // Subscribe til events ændringer
-  useEffect(() => {
-    const channel = supabase
-      .channel("events-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "events",
-        },
-        (payload) => {
-          
-          // Genindlæs events når der sker ændringer
-          fetchEvents();
-        },
-      )
-      .subscribe((status) => {
-        // Håndter kanal status
-        if (status === "SUBSCRIBED") {
-          
-        } else if (status === "CLOSED") {
-          
-        } else if (status === "CHANNEL_ERROR") {
-          console.error(
-            "Fejl i events kanal - prøver at genoprette forbindelse",
-          );
-          // Prøv at genoprette forbindelsen efter en kort pause
-          setTimeout(() => {
-            channel.subscribe();
-          }, 1000);
-        }
-      });
-
-    return () => {
-      
-      supabase.removeChannel(channel);
-    };
-  }, [supabase, fetchEvents]);
 
   const updateEvent = useCallback(async (event: CalendarEvent) => {
     try {
@@ -211,28 +194,26 @@ export function useEvents(visibleCalendarIds: string[]) {
         throw new Error("Du skal være logget ind for at oprette begivenheder");
       }
 
-      // Valider input
-      validateEventInput(eventData);
-
       // Formatér event data
-      const eventToCreate = formatEventData(eventData);
+      const formattedEvent = formatEventData(eventData);
 
       // Debug logging
-      logEventData(eventData, eventToCreate);
+      console.log("Formateret event data:", formattedEvent);
 
       // Opret event
       const { data: newEvent, error } = await supabase
-        .rpc("insert_event", { event_data: eventToCreate });
+        .from("events")
+        .insert([formattedEvent])
+        .select()
+        .single();
 
       if (error) {
         console.error("Database fejl:", error);
         throw new Error(error.message);
       }
 
-      // Formatér og returner det nye event
-      const formattedEvent = formatNewEvent(newEvent);
       await fetchEvents();
-      return formattedEvent;
+      return newEvent;
     } catch (error) {
       console.error("Fejl ved oprettelse af event:", error);
       throw error;
@@ -254,25 +235,65 @@ export function useEvents(visibleCalendarIds: string[]) {
     }
   };
 
-  const formatEventData = (eventData: CreateEventInput) => ({
-    title: eventData.title.trim(),
-    description: eventData.description?.trim() || null,
-    start_date: eventData.start_date.toISOString().split("T")[0],
-    end_date: eventData.end_date.toISOString().split("T")[0],
-    start_time: eventData.is_all_day
-      ? "00:00:00"
-      : eventData.start_time || "00:00:00",
-    end_time: eventData.is_all_day
-      ? "23:59:59"
-      : eventData.end_time || "23:59:59",
-    is_all_day: eventData.is_all_day || false,
-    location: eventData.location?.trim() || "",
-    calendar_id: eventData.calendar_id,
-    category: eventData.category || "arbejde",
-    color: eventData.color || "#4285F4",
-    repeat_days: [],
-    repeat: null,
-  });
+  const formatEventData = (eventData: CreateEventInput) => {
+    try {
+      // Konverter datoer til Date objekter og juster for tidszoner
+      const startDate = eventData.start_date instanceof Date
+        ? new Date(eventData.start_date)
+        : new Date(eventData.start_date);
+
+      const endDate = eventData.end_date instanceof Date
+        ? new Date(eventData.end_date)
+        : new Date(eventData.end_date);
+
+      // Juster for tidszoneforskelle
+      const tzOffset = startDate.getTimezoneOffset() * 60000; // Offset i millisekunder
+
+      // Tilføj tidspunkt til datoerne hvis det ikke er en heldagsbegivenhed
+      if (!eventData.is_all_day) {
+        const [startHours, startMinutes] = eventData.start_time.split(":");
+        const [endHours, endMinutes] = eventData.end_time.split(":");
+
+        startDate.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0);
+        endDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
+      } else {
+        // For heldagsbegivenheder, sæt korrekt UTC tid
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+      }
+
+      // Konverter til UTC strings med korrektion for tidszone
+      const startUTC = new Date(startDate.getTime() - tzOffset).toISOString();
+      const endUTC = new Date(endDate.getTime() - tzOffset).toISOString();
+
+      // Sæt standardværdier for alle påkrævede felter
+      return {
+        title: eventData.title.trim(),
+        description: eventData.description?.trim() || null,
+        start_date: startUTC,
+        end_date: endUTC,
+        start_time: eventData.is_all_day
+          ? "00:00:00"
+          : eventData.start_time || "00:00:00",
+        end_time: eventData.is_all_day
+          ? "23:59:59"
+          : eventData.end_time || "23:59:59",
+        is_all_day: eventData.is_all_day || false,
+        location: eventData.location?.trim() || "",
+        calendar_id: eventData.calendar_id,
+        category: eventData.category || "arbejde",
+        color: eventData.color || "#4285F4",
+        repeat_days: eventData.repeat_days || [],
+        repeat: eventData.repeat || null,
+        repeat_until: eventData.repeat_until || null,
+        parent_event_id: eventData.parent_event_id || null,
+      };
+    } catch (error) {
+      console.error("Fejl ved formatering af event data:", error);
+      console.log("Event data der fejlede:", eventData);
+      throw new Error("Kunne ikke formatere event data korrekt");
+    }
+  };
 
   const formatNewEvent = (newEvent: any) => ({
     ...newEvent,
@@ -282,8 +303,6 @@ export function useEvents(visibleCalendarIds: string[]) {
 
   const logEventData = (rawData: CreateEventInput, formattedData: any) => {
     if (process.env.NODE_ENV === "development") {
-      
-      
       console.log("Calendar ID check:", {
         fromEventData: rawData.calendar_id,
         inEventToCreate: formattedData.calendar_id,

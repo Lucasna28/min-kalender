@@ -2,6 +2,7 @@
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import SupabaseProvider from "@/components/providers/supabase-provider";
+import { Toaster } from "sonner";
 
 export function RootProvider({ children }: { children: React.ReactNode }) {
   return (
@@ -12,6 +13,7 @@ export function RootProvider({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
     >
       <SupabaseProvider>{children}</SupabaseProvider>
+      <Toaster />
     </ThemeProvider>
   );
 }

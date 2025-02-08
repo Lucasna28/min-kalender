@@ -306,6 +306,43 @@ export default function CalendarPage() {
     fetchCalendars();
   }, [supabase, session?.user?.id]);
 
+  useEffect(() => {
+    let channel: RealtimeChannel;
+
+    const setupNotifications = async () => {
+      try {
+        if (channel) {
+          await channel.unsubscribe();
+        }
+
+        channel = supabase
+          .channel("notifications")
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "notifications",
+            },
+            () => {
+              // Håndter notifikations opdateringer her
+            }
+          )
+          .subscribe();
+      } catch (error) {
+        console.error("Fejl i notifikations kanal:", error);
+      }
+    };
+
+    setupNotifications();
+
+    return () => {
+      if (channel) {
+        channel.unsubscribe();
+      }
+    };
+  }, [supabase]);
+
   if (!mounted) {
     return (
       <div className="flex min-h-screen items-center justify-center">

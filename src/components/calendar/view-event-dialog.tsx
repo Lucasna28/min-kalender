@@ -19,7 +19,7 @@ import {
   AlertTriangle,
   ExternalLink,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -34,6 +34,8 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { CalendarEvent } from "@/hooks/use-events";
+import { useToast } from "@/components/ui/use-toast";
+import { useSupabase } from "@/components/providers/supabase-provider";
 
 interface ViewEventDialogProps {
   event: CalendarEvent | null;
@@ -79,6 +81,24 @@ export function ViewEventDialog({
   onDelete,
 }: ViewEventDialogProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const { toast } = useToast();
+  const { supabase, session } = useSupabase();
+
+  useEffect(() => {
+    // Tjek session når komponenten monteres
+    const checkSession = async () => {
+      const {
+        data: { session: currentSession },
+      } = await supabase.auth.getSession();
+      if (!currentSession) {
+        console.log("Ingen aktiv session fundet");
+      } else {
+        console.log("Aktiv session fundet:", currentSession.user.id);
+      }
+    };
+
+    checkSession();
+  }, [supabase]);
 
   if (!event) return null;
 
@@ -90,7 +110,12 @@ export function ViewEventDialog({
         console.error("Ugyldig dato:", date);
         return new Date();
       }
-      return eventDate;
+
+      // Tilføj en dag til datoen for at kompensere for tidszoneforskellen
+      const adjustedDate = new Date(eventDate);
+      adjustedDate.setDate(adjustedDate.getDate() + 1);
+
+      return adjustedDate;
     } catch (error) {
       console.error("Fejl ved formatering af dato:", error);
       return new Date();
@@ -111,20 +136,79 @@ export function ViewEventDialog({
   });
 
   const handleEdit = () => {
-    if (event && onEdit) {
-      onEdit(event);
-    }
+    toast({
+      title: "Coming Soon",
+      description: "Redigering af begivenheder kommer snart!",
+      duration: 3000,
+    });
   };
 
   const handleDelete = async () => {
-    if (event && onDelete) {
-      try {
-        await onDelete(event.id);
-        setShowDeleteDialog(false);
-        onOpenChange(false);
-      } catch (error) {
-        console.error("Fejl ved sletning af begivenhed:", error);
+    console.log("ViewEventDialog handleDelete starter");
+    try {
+      if (!event || !onDelete) {
+        console.log("Mangler event eller onDelete handler", {
+          event,
+          hasOnDelete: !!onDelete,
+        });
+        return;
       }
+
+      const {
+        data: { session: currentSession },
+      } = await supabase.auth.getSession();
+
+      if (!currentSession?.user) {
+        console.log("Ingen bruger fundet i session");
+        toast({
+          title: "Fejl",
+          description: "Du skal være logget ind for at slette begivenheder",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Log event detaljer
+      console.log("Forsøger at slette event:", {
+        eventId: event.id,
+        userId: currentSession.user.id,
+        calendarId: event.calendar_id,
+        eventUserId: event.user_id,
+      });
+
+      // Forsøg at slette direkte
+      const { error: deleteError } = await supabase
+        .from("events")
+        .delete()
+        .eq("id", event.id)
+        .select();
+
+      if (deleteError) {
+        console.error("Database fejl ved sletning:", deleteError);
+        toast({
+          title: "Fejl",
+          description: `Der skete en fejl ved sletning af begivenheden: ${deleteError.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log("Event blev slettet fra databasen");
+      await onDelete(event.id);
+      setShowDeleteDialog(false);
+      onOpenChange(false);
+
+      toast({
+        title: "Succes",
+        description: "Begivenheden er blevet slettet",
+      });
+    } catch (error) {
+      console.error("Fejl ved sletning:", error);
+      toast({
+        title: "Fejl",
+        description: "Der skete en fejl ved sletning af begivenheden",
+        variant: "destructive",
+      });
     }
   };
 
@@ -135,7 +219,7 @@ export function ViewEventDialog({
   };
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {!!event && (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
           <DialogContent
@@ -346,10 +430,10 @@ export function ViewEventDialog({
                         <div className="space-y-2.5 mt-2.5">
                           {event.invitations.map((invite, index) => (
                             <motion.div
+                              key={`${invite.email}-${index}`}
                               initial={{ opacity: 0, x: -20 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: 0.4 + index * 0.1 }}
-                              key={index}
                               className="flex items-center gap-2 group/invite"
                             >
                               <div
@@ -398,8 +482,15 @@ export function ViewEventDialog({
                   Luk
                 </Button>
                 {onEdit && event.calendar_id !== "danish-holidays" && (
-                  <Button variant="outline" onClick={handleEdit}>
-                    Rediger
+                  <Button
+                    variant="outline"
+                    onClick={handleEdit}
+                    className="relative group overflow-hidden"
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      Rediger
+                      <span className="text-xs opacity-60">(Kommer snart)</span>
+                    </span>
                   </Button>
                 )}
                 {onDelete && event.calendar_id !== "danish-holidays" && (
@@ -416,27 +507,29 @@ export function ViewEventDialog({
         </Dialog>
       )}
 
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        key={`delete-dialog-${event.id}`}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              <span>Slet begivenhed</span>
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
-              Er du sikker på, at du vil slette denne begivenhed? Denne handling
-              kan ikke fortrydes.
+            <AlertDialogTitle>Er du sikker?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Denne handling kan ikke fortrydes. Begivenheden vil blive
+              permanent slettet.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="hover:bg-background">
+            <AlertDialogCancel onClick={() => setShowDeleteDialog(false)}>
               Annuller
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+              onClick={() => {
+                console.log("Slet knap klikket");
+                handleDelete();
+              }}
             >
-              <Trash2 className="w-4 h-4" />
               Slet begivenhed
             </AlertDialogAction>
           </AlertDialogFooter>

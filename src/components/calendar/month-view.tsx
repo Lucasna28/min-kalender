@@ -347,7 +347,7 @@ export function MonthView({
               <div className="space-y-1 sm:space-y-1.5 mt-1 sm:mt-2">
                 {dayEvents.slice(0, 3).map((event) => (
                   <EventItem
-                    key={event.id}
+                    key={`event-${event.id}`}
                     event={event}
                     className={cn(
                       // Større tekst og bedre padding
@@ -388,8 +388,14 @@ export function MonthView({
       <ViewEventDialog
         event={selectedEvent}
         isOpen={!!selectedEvent}
-        onOpenChange={(open) => !open && setSelectedEvent(null)}
-        onEdit={handleEdit}
+        onOpenChange={(open) => {
+          if (!open) setSelectedEvent(null);
+        }}
+        onEdit={(event) => {
+          // Håndter redigering her
+          console.log("Redigerer event:", event);
+          // Åbn redigeringsdialog eller lignende
+        }}
         onDelete={handleDelete}
       />
     </div>

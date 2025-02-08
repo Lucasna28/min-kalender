@@ -57,9 +57,10 @@ import { Badge } from "@/components/ui/badge";
 interface CreateEventDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  defaultDate?: Date;
+  defaultDate: Date;
   visibleCalendarIds: string[];
-  createEvent: (event: any) => Promise<void>;
+  createEvent: (event: CreateEventInput) => Promise<void>;
+  eventToEdit?: Event | null;
 }
 
 interface Calendar {
@@ -72,10 +73,13 @@ interface Calendar {
 export function CreateEventDialog({
   isOpen,
   onOpenChange,
-  defaultDate = new Date(),
+  defaultDate,
   visibleCalendarIds,
   createEvent,
+  eventToEdit,
 }: CreateEventDialogProps) {
+  console.log("CreateEventDialog render:", { isOpen, eventToEdit });
+
   const { supabase } = useSupabase();
   const [isLoading, setIsLoading] = useState(false);
   const [calendars, setCalendars] = useState<Calendar[]>([]);
@@ -101,7 +105,8 @@ export function CreateEventDialog({
   });
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !eventToEdit) {
+      // Kun nulstil form hvis vi ikke er i redigeringstilstand
       form.reset({
         title: "",
         description: "",
@@ -114,7 +119,25 @@ export function CreateEventDialog({
         category: "andet",
       });
     }
-  }, [isOpen, defaultDate, form, visibleCalendarIds]);
+  }, [isOpen, defaultDate, form, visibleCalendarIds, eventToEdit]);
+
+  useEffect(() => {
+    if (eventToEdit) {
+      form.reset({
+        title: eventToEdit.title,
+        description: eventToEdit.description || "",
+        start_date: eventToEdit.start_date,
+        end_date: eventToEdit.end_date,
+        start_time: eventToEdit.start_time || "00:00",
+        end_time: eventToEdit.end_time || "23:59",
+        is_all_day: eventToEdit.is_all_day,
+        location: eventToEdit.location || "",
+        calendar_id: eventToEdit.calendar_id,
+        category: eventToEdit.category || "arbejde",
+        color: eventToEdit.color || "#4285F4",
+      });
+    }
+  }, [eventToEdit, form]);
 
   useEffect(() => {
     const getUser = async () => {
@@ -146,11 +169,11 @@ export function CreateEventDialog({
         .select(
           `
           calendar:calendars (
-            id,
-            name,
-            user_id
+          id,
+          name,
+          user_id
           )
-        `
+      `
         )
         .eq("user_id", user.id)
         .in("permission", ["editor", "admin"])
@@ -180,11 +203,16 @@ export function CreateEventDialog({
 
       if (!user) throw new Error("Du skal være logget ind");
 
-      await createEvent({
+      // Brug datoerne direkte uden justering
+      const event = {
         ...data,
+        start_date: data.start_date.toISOString(),
+        end_date: data.end_date.toISOString(),
         user_id: user.id,
         color: getCategoryColor(data.category),
-      });
+      };
+
+      await createEvent(event);
 
       onOpenChange(false);
       form.reset();
@@ -202,7 +230,7 @@ export function CreateEventDialog({
         <DialogHeader className="px-4 sm:px-6 py-4 border-b bg-gradient-to-b from-muted/50 to-background sticky top-0 z-20">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-semibold">
-              Opret begivenhed
+              {eventToEdit ? "Rediger begivenhed" : "Opret ny begivenhed"}
             </DialogTitle>
             <Button
               variant="ghost"

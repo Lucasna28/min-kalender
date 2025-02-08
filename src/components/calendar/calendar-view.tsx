@@ -18,6 +18,7 @@ import "@/styles/print.css";
 import { Event } from "@/types/calendar";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { motion, AnimatePresence } from "framer-motion";
+import { ViewEventDialog } from "./view-event-dialog";
 
 export type CalendarViewType = "day" | "week" | "month" | "year";
 
@@ -34,6 +35,7 @@ interface CalendarViewProps {
   events: Event[];
   onUpdateEvent: (event: Event) => Promise<void>;
   onDeleteEvent: (eventId: string) => Promise<void>;
+  onEventSelect?: (event: Event) => void;
 }
 
 const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
@@ -50,15 +52,21 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
       events,
       onUpdateEvent,
       onDeleteEvent,
+      onEventSelect,
     },
     ref
   ) => {
     const [_isCreateEventOpen, setIsCreateEventOpen] = useState(false);
-    const [selectedEventDate, setSelectedEventDate] = useState<Date>(
-      new Date()
-    );
+    const [selectedEventDate, setSelectedEventDate] = useState(selectedDate);
+    const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+    const [eventToEdit, setEventToEdit] = useState<Event | null>(null);
     const { createEvent, refetch } = useEvents(visibleCalendarIds);
-    const { supabase } = useSupabase();
+    const { supabase, session } = useSupabase();
+
+    // Tilføj denne useEffect for at håndtere synkronisering af isOpen state
+    useEffect(() => {
+      setIsCreateEventOpen(isCreateEventOpen);
+    }, [isCreateEventOpen]);
 
     // Subscribe til events ændringer
     useEffect(() => {
@@ -196,6 +204,62 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
 
     const isRefreshing = usePullToRefresh(handleRefresh);
 
+    const handleDeleteEvent = async (eventId: string) => {
+      console.log("CalendarView handleDeleteEvent starter", { eventId });
+      try {
+        const {
+          data: { session: currentSession },
+        } = await supabase.auth.getSession();
+
+        if (!currentSession?.user) {
+          console.log("Ingen bruger fundet i session");
+          toast.error("Du skal være logget ind for at slette begivenheder");
+          return;
+        }
+
+        // Først, tjek om eventet eksisterer
+        const { data: event, error: eventError } = await supabase
+          .from("events")
+          .select("*")
+          .eq("id", eventId)
+          .single();
+
+        if (eventError || !event) {
+          console.error("Kunne ikke finde event:", eventError);
+          toast.error("Kunne ikke finde begivenheden");
+          return;
+        }
+
+        console.log("Fundet event:", event);
+
+        // Forsøg at slette eventet
+        const { error: deleteError } = await supabase
+          .from("events")
+          .delete()
+          .eq("id", eventId);
+
+        if (deleteError) {
+          console.error("Fejl ved sletning:", deleteError);
+          toast.error("Der skete en fejl ved sletning af begivenheden");
+          return;
+        }
+
+        // Hvis vi når hertil er eventet blevet slettet
+        console.log("Event slettet fra databasen");
+        await refetch();
+        setSelectedEvent(null);
+        toast.success("Begivenheden er blevet slettet");
+      } catch (error) {
+        console.error("Uventet fejl ved sletning:", error);
+        toast.error("Der skete en fejl ved sletning af begivenheden");
+      }
+    };
+
+    // Tilføj denne funktion til at håndtere event selektion
+    const handleEventSelect = (event: Event) => {
+      setSelectedEvent(event);
+    };
+
     // Render den aktuelle view komponent
     const CurrentView =
       view === "day"
@@ -284,19 +348,43 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
             onDateChange={handleDateChange}
             showHolidays={showHolidays}
             onUpdateEvent={onUpdateEvent}
-            onDeleteEvent={onDeleteEvent}
+            onDeleteEvent={handleDeleteEvent}
+            onEventSelect={handleEventSelect}
           />
         </div>
 
         <CreateEventDialog
-          isOpen={isCreateEventOpen || _isCreateEventOpen}
+          isOpen={_isCreateEventOpen}
           onOpenChange={(open) => {
             setIsCreateEventOpen(open);
             onCreateEventOpenChange?.(open);
+            if (!open) {
+              setEventToEdit(null);
+            }
           }}
-          defaultDate={selectedEventDate}
+          defaultDate={selectedEventDate || selectedDate}
           visibleCalendarIds={visibleCalendarIds}
           createEvent={createEvent}
+          eventToEdit={eventToEdit}
+        />
+
+        <ViewEventDialog
+          event={selectedEvent}
+          isOpen={!!selectedEvent}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedEvent(null);
+            }
+          }}
+          onDelete={handleDeleteEvent}
+          onEdit={(event) => {
+            console.log("Starter redigering af event:", event);
+            setEventToEdit(event);
+            setSelectedEventDate(event.start_date);
+            setIsCreateEventOpen(true);
+            onCreateEventOpenChange?.(true);
+            setSelectedEvent(null);
+          }}
         />
       </div>
     );
