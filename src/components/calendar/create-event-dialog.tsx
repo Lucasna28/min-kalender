@@ -58,6 +58,7 @@ interface CreateEventDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   defaultDate?: Date;
+  visibleCalendarIds: string[];
   createEvent: (event: any) => Promise<void>;
 }
 
@@ -72,6 +73,7 @@ export function CreateEventDialog({
   isOpen,
   onOpenChange,
   defaultDate = new Date(),
+  visibleCalendarIds,
   createEvent,
 }: CreateEventDialogProps) {
   const { supabase } = useSupabase();
@@ -90,11 +92,29 @@ export function CreateEventDialog({
       description: "",
       start_date: defaultDate,
       end_date: defaultDate,
+      start_time: "09:00",
+      end_time: "10:00",
       is_all_day: false,
-      calendar_id: "",
+      calendar_id: visibleCalendarIds[0] || "",
       category: "andet",
     },
   });
+
+  useEffect(() => {
+    if (isOpen) {
+      form.reset({
+        title: "",
+        description: "",
+        start_date: defaultDate,
+        end_date: defaultDate,
+        start_time: "09:00",
+        end_time: "10:00",
+        is_all_day: false,
+        calendar_id: visibleCalendarIds[0] || "",
+        category: "andet",
+      });
+    }
+  }, [isOpen, defaultDate, form, visibleCalendarIds]);
 
   useEffect(() => {
     const getUser = async () => {

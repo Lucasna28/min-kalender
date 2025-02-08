@@ -127,7 +127,6 @@ export function TimeSettings({ form }: TimeSettingsProps) {
                     locale={da}
                     selected={field.value}
                     onSelect={field.onChange}
-                    disabled={(date) => date > new Date()}
                     initialFocus
                   />
                 </PopoverContent>
