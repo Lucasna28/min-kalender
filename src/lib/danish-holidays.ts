@@ -55,15 +55,18 @@ export function getDanishHolidays(year: number): DanishHoliday[] {
   const goodFriday = addDays(easterSunday, -2); // Langfredag
   const easterMonday = addDays(easterSunday, 1); // 2. Påskedag
 
-  // Beregn Fars Dag (5. juni eller første søndag i juni hvis 5. juni ikke er en søndag)
-  const fathersDayBase = new Date(year, 5, 5);
-  const fathersDayOffset = (7 - fathersDayBase.getDay()) % 7;
-  const fathersDay = addDays(fathersDayBase, fathersDayOffset);
+  // Fars Dag er samme dag som Grundlovsdag (5. juni)
+  const fathersDay = new Date(year, 5, 5);
 
   // Beregn Mors Dag (anden søndag i maj)
   const mothersDayBase = new Date(year, 4, 1);
   const mothersDayOffset = (7 - mothersDayBase.getDay()) % 7;
   const mothersDay = addDays(mothersDayBase, mothersDayOffset + 7);
+
+  // Beregn Pandekagedagen (tirsdagen efter fastelavn)
+  // Fastelavn er 7 uger før påskedag
+  const carnavalSunday = addDays(easterSunday, -49);
+  const pancakeDay = addDays(carnavalSunday, 2); // Tirsdagen efter fastelavnssøndag
 
   const holidays: DanishHoliday[] = [
     // Faste helligdage
@@ -192,7 +195,7 @@ export function getDanishHolidays(year: number): DanishHoliday[] {
       date: new Date(year, 5, 5),
       title: "Grundlovsdag",
       type: "holiday",
-      color: "#dc2626",
+      color: "#3b82f6",
     },
     {
       date: fathersDay,
@@ -209,6 +212,12 @@ export function getDanishHolidays(year: number): DanishHoliday[] {
     {
       date: new Date(year, 5, 23),
       title: "Sankt Hans",
+      type: "special",
+      color: "#f59e0b",
+    },
+    {
+      date: pancakeDay,
+      title: "Pandekagedagen",
       type: "special",
       color: "#f59e0b",
     },
@@ -232,7 +241,7 @@ export function getDanishHolidays(year: number): DanishHoliday[] {
     },
     {
       date: new Date(year, 9, 1),
-      title: "International Kaffedag",
+      title: "International Kaffedag ☕",
       type: "special",
       color: "#f59e0b",
     },
@@ -245,12 +254,6 @@ export function getDanishHolidays(year: number): DanishHoliday[] {
     {
       date: new Date(year, 9, 28),
       title: "International Chokoladedag",
-      type: "special",
-      color: "#f59e0b",
-    },
-    {
-      date: new Date(year, 6, 17), // 17. juli
-      title: "International Emoji Dag 🎉",
       type: "special",
       color: "#f59e0b",
     },
@@ -269,24 +272,6 @@ export function getDanishHolidays(year: number): DanishHoliday[] {
     {
       date: new Date(year, 1, 9), // 9. februar
       title: "International Pizzadag 🍕",
-      type: "special",
-      color: "#f59e0b",
-    },
-    {
-      date: new Date(year, 5, 21), // 21. juni
-      title: "International Yoga Dag 🧘‍♀️",
-      type: "special",
-      color: "#f59e0b",
-    },
-    {
-      date: new Date(year, 7, 15), // 15. august
-      title: "International Slapdag 😴",
-      type: "special",
-      color: "#f59e0b",
-    },
-    {
-      date: new Date(year, 9, 1), // 1. oktober
-      title: "International Kaffedag ☕",
       type: "special",
       color: "#f59e0b",
     },

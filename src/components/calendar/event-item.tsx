@@ -807,8 +807,8 @@ export function EventItem({
       },
       gaming: {
         bg: "#4B0082",
-        icon1: "🎮",
-        icon2: "🕹️",
+        icon1: "🍽️",
+        icon2: "♻️",
         textBg: "#800080",
       },
     };
@@ -816,10 +816,10 @@ export function EventItem({
     const theme = isPizzaDay
       ? config.pizza
       : isCoffeeDay
-      ? config.coffee
-      : isCakeDay
-      ? config.cake
-      : config.gaming;
+        ? config.coffee
+        : isCakeDay
+          ? config.cake
+          : config.gaming;
 
     return (
       <motion.div
