@@ -31,7 +31,10 @@ export function Header({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           className="p-2 sm:p-3 hover:bg-accent rounded-full -ml-1 sm:-ml-2 touch-manipulation max-[824px]:block hidden"
-          onClick={onOpenSidebar}
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenSidebar();
+          }}
         >
           <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
           <span className="sr-only">Åbn menu</span>

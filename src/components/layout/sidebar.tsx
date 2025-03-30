@@ -14,6 +14,7 @@ import {
   Grid,
   CalendarDays,
   CalendarRange,
+  X,
 } from "lucide-react";
 import { CreateCalendarDialog } from "@/components/calendar/create-calendar-dialog";
 import { useSupabase } from "@/components/providers/supabase-provider";
@@ -30,7 +31,6 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarSection,
-  SidebarOverlay,
 } from "@/components/ui/sidebar";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -42,7 +42,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { da } from "date-fns/locale";
-import { useClickOutside } from "@/hooks/use-click-outside";
 
 interface Calendar {
   id: string;
@@ -104,16 +103,6 @@ export default function CalendarSidebar({
   const [currentTime, setCurrentTime] = useState(new Date());
   const [printView, setPrintView] = useState<"day" | "week" | "month">("month");
   const sidebarRef = useRef<HTMLDivElement>(null);
-
-  useClickOutside(
-    sidebarRef,
-    () => {
-      if (isOpen) {
-        onOpenChange(false);
-      }
-    },
-    isOpen
-  );
 
   useEffect(() => {
     const getUserEmail = async () => {
@@ -288,23 +277,6 @@ export default function CalendarSidebar({
 
   return (
     <div ref={sidebarRef} className="h-full">
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-          >
-            <SidebarOverlay
-              data-state={isOpen ? "open" : "closed"}
-              onClick={() => onOpenChange(false)}
-              className="bg-background/80 backdrop-blur-sm"
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <Sidebar
         data-state={isOpen ? "open" : "closed"}
         className={cn(
@@ -335,7 +307,7 @@ export default function CalendarSidebar({
           </div>
         </SidebarHeader>
 
-        <div className="flex items-center gap-0.5 px-1.5 py-1 border-b flex-shrink-0 group">
+        <div className="flex items-center gap-0.5 px-1.5 py-1 border-b flex-shrink-0 group mt-4">
           <Button
             variant="ghost"
             size="sm"
@@ -587,21 +559,6 @@ export default function CalendarSidebar({
 
           <SidebarSection title="Print sektion">
             <div className="space-y-2">
-              <Select
-                value={printView}
-                onValueChange={(value: "day" | "week" | "month") =>
-                  setPrintView(value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Vælg visning" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="day">Dag</SelectItem>
-                  <SelectItem value="week">Uge</SelectItem>
-                  <SelectItem value="month">Måned</SelectItem>
-                </SelectContent>
-              </Select>
               <Button
                 variant="outline"
                 className="w-full"
@@ -612,8 +569,8 @@ export default function CalendarSidebar({
                 {printView === "day"
                   ? "dag"
                   : printView === "week"
-                  ? "uge"
-                  : "måned"}
+                    ? "uge"
+                    : "måned"}
               </Button>
             </div>
           </SidebarSection>

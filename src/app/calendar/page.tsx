@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  X,
 } from "lucide-react";
 import { format } from "date-fns";
 import { da } from "date-fns/locale";
@@ -56,7 +57,7 @@ export default function CalendarPage() {
   const [selectedCalendarId, setSelectedCalendarId] = useState<string | null>(
     null
   );
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
   const [showHolidays, setShowHolidays] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -365,6 +366,16 @@ export default function CalendarPage() {
     }
   };
 
+  // En ny funktion der kan toggle sidebar og garanterer korrekt håndtering
+  const toggleSidebar = () => {
+    setIsSidebarOpen((prevState) => !prevState);
+  };
+
+  // En funktion der kun lukker sidebaren
+  const closeSidebar = () => {
+    setIsSidebarOpen(false);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-background">
       <div className="flex-shrink-0 h-14 fixed top-0 left-0 right-0 z-50 bg-background/50 supports-[backdrop-filter]:bg-background/30 backdrop-blur-xl border-b border-border/40 shadow-sm">
@@ -374,11 +385,11 @@ export default function CalendarPage() {
               variant="ghost"
               size="icon"
               className="h-10 w-10 sm:hidden hover:bg-accent/50 transition-all duration-300 hover:scale-105 active:scale-95 hover:rotate-180 relative group before:absolute before:inset-0 before:rounded-full before:bg-primary/5 before:scale-0 before:hover:scale-100 before:transition-transform before:duration-300"
-              onClick={() => setIsSidebarOpen(true)}
+              onClick={toggleSidebar}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full" />
               <Menu className="h-5 w-5 transition-all duration-300 group-hover:scale-110 relative z-10" />
-              <span className="sr-only">Åbn menu</span>
+              <span className="sr-only">Åbn/luk menu</span>
             </Button>
             <div className="hidden sm:flex items-center gap-3 px-4 py-2 rounded-xl bg-accent/20 hover:bg-accent/30 transition-all duration-300 hover:scale-105 hover:-rotate-1 group relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-primary/10 before:to-transparent before:translate-x-[-100%] before:group-hover:translate-x-[100%] before:transition-transform before:duration-500">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -405,7 +416,7 @@ export default function CalendarPage() {
                 <ChevronLeft className="h-4 w-4 relative z-10 group-hover:-translate-x-0.5 transition-transform" />
                 <span className="sr-only">Forrige måned</span>
               </Button>
-              <h2 className="lg:text-lg text-sm font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent animate-in slide-in-from-left duration-300 min-w-[120px] text-center relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary/20">
+              <h2 className="lg:text-lg text-sm font-semibold bg-gradient-to-r from-primary uppercase to-primary/70 bg-clip-text text-transparent animate-in slide-in-from-left duration-300 min-w-[120px] text-center relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary/20">
                 {format(selectedDate, "MMMM yyyy", { locale: da })}
               </h2>
               <Button
@@ -652,7 +663,7 @@ export default function CalendarPage() {
         {isSidebarOpen && (
           <div
             className="fixed inset-0 bg-background/60 backdrop-blur-xl z-40 sm:hidden"
-            onClick={() => setIsSidebarOpen(false)}
+            onClick={closeSidebar}
           />
         )}
 
@@ -665,6 +676,17 @@ export default function CalendarPage() {
             isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           )}
         >
+          <div className="sm:hidden absolute top-4 right-4 z-50">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 hover:bg-accent/50 rounded-full transition-all"
+              onClick={closeSidebar}
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Luk menu</span>
+            </Button>
+          </div>
           <div className="h-full overflow-y-auto">
             <CalendarSidebar
               view={view}
@@ -676,7 +698,7 @@ export default function CalendarPage() {
               selectedCalendarId={selectedCalendarId}
               onSelectedCalendarIdChange={setSelectedCalendarId}
               isOpen={isSidebarOpen}
-              onOpenChange={setIsSidebarOpen}
+              onOpenChange={() => {}}
               showHolidays={showHolidays}
               onShowHolidaysChange={setShowHolidays}
               handlePrint={handlePrint}

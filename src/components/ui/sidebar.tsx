@@ -134,21 +134,6 @@ const SidebarItemAction = React.forwardRef<
 ));
 SidebarItemAction.displayName = "SidebarItemAction";
 
-const SidebarOverlay = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "fixed inset-0 z-30 bg-background/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 sm:hidden",
-      className
-    )}
-    {...props}
-  />
-));
-SidebarOverlay.displayName = "SidebarOverlay";
-
 export {
   Sidebar,
   SidebarHeader,
@@ -160,5 +145,4 @@ export {
   SidebarItemIcon,
   SidebarItemContent,
   SidebarItemAction,
-  SidebarOverlay,
 };
