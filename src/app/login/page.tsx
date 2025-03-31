@@ -198,9 +198,6 @@ export default function LoginPage() {
             console.error("Fejl ved opdatering af profil:", profileError);
             // Log mere detaljeret fejlinformation
             if (profileError.code === "23505") {
-              console.log(
-                "Profil findes allerede - fortsætter med kalenderoprettelse"
-              );
             } else {
               console.error("Uventet fejl ved profiloprettelse:", profileError);
             }
@@ -455,8 +452,8 @@ export default function LoginPage() {
                       errors.email
                         ? "border-destructive"
                         : email && !errors.email
-                        ? "border-primary"
-                        : ""
+                          ? "border-primary"
+                          : ""
                     )}
                     placeholder="din@email.dk"
                     disabled={isLoading}
@@ -517,8 +514,8 @@ export default function LoginPage() {
                           errors.name
                             ? "border-destructive"
                             : name && !errors.name
-                            ? "border-primary"
-                            : ""
+                              ? "border-primary"
+                              : ""
                         )}
                         placeholder="Dit navn"
                         disabled={isLoading}
@@ -574,8 +571,8 @@ export default function LoginPage() {
                       errors.password
                         ? "border-destructive"
                         : password && !errors.password
-                        ? "border-primary"
-                        : ""
+                          ? "border-primary"
+                          : ""
                     )}
                     placeholder="••••••••"
                     disabled={isLoading}

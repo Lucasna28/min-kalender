@@ -393,7 +393,6 @@ export function MonthView({
         }}
         onEdit={(event) => {
           // Håndter redigering her
-          console.log("Redigerer event:", event);
           // Åbn redigeringsdialog eller lignende
         }}
         onDelete={handleDelete}

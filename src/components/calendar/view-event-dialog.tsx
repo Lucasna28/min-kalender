@@ -92,7 +92,7 @@ export function ViewEventDialog({
         data: { session: currentSession },
       } = await supabase.auth.getSession();
       if (!currentSession) {
-        console.log("Ingen aktiv session fundet");
+        console.error("Ingen aktiv session fundet");
       } else {
         console.log("Aktiv session fundet:", currentSession.user.id);
       }

@@ -251,6 +251,18 @@ export function MobileEventDialog({
         </h2>
       </div>
 
+      {/* Whole day indicator - vises kun når hele dagen er aktiveret */}
+      {form.watch("is_all_day") && (
+        <div className="bg-[#0A84FF]/10 border-b border-[#0A84FF]/20 py-2 px-6 flex items-center justify-center">
+          <div className="flex items-center space-x-2">
+            <Clock className="w-4 h-4 text-[#0A84FF]" />
+            <span className="text-[#0A84FF] font-medium text-[14px]">
+              Begivenheden varer hele dagen
+            </span>
+          </div>
+        </div>
+      )}
+
       <Form {...form}>
         <form
           id="mobile-event-form"
@@ -506,10 +518,36 @@ export function MobileEventDialog({
             <div className="border-b border-[#2c2c2e] bg-[#1c1c1e]">
               <div className="px-6 pt-5 pb-6">
                 {/* Hele dagen toggle - flyttet til toppen */}
-                <div className="flex items-center justify-between mb-6">
-                  <span className="text-[17px] font-medium text-white">
-                    Hele dagen
-                  </span>
+                <div
+                  className={cn(
+                    "flex items-center justify-between mb-6 p-4 rounded-xl transition-all duration-300",
+                    form.watch("is_all_day")
+                      ? "bg-[#0A84FF]/20 border border-[#0A84FF]/30"
+                      : "bg-[#2c2c2e]"
+                  )}
+                >
+                  <div className="flex items-center">
+                    <div
+                      className={cn(
+                        "w-10 h-10 rounded-full flex items-center justify-center mr-3 transition-all duration-300",
+                        form.watch("is_all_day")
+                          ? "bg-[#0A84FF]/20 text-[#0A84FF]"
+                          : "bg-[#3a3a3c] text-white"
+                      )}
+                    >
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-[17px] font-medium text-white block">
+                        Hele dagen
+                      </span>
+                      <span className="text-[13px] text-[#8E8E93] mt-0.5 block">
+                        {form.watch("is_all_day")
+                          ? "Begivenheden starter kl. 00:00 og slutter kl. 23:59"
+                          : "Angiv specifikt start- og sluttidspunkt"}
+                      </span>
+                    </div>
+                  </div>
                   <FormField
                     control={form.control}
                     name="is_all_day"
@@ -518,8 +556,22 @@ export function MobileEventDialog({
                         <FormControl>
                           <Switch
                             checked={field.value}
-                            onCheckedChange={field.onChange}
-                            className="data-[state=checked]:bg-[#0A84FF] data-[state=checked]:border-[#0A84FF]"
+                            onCheckedChange={(newValue) => {
+                              field.onChange(newValue);
+                              // Hvis skiftet til hele dagen, nulstil tidspunkterne
+                              if (newValue) {
+                                form.setValue("start_time", "00:00");
+                                form.setValue("end_time", "23:59");
+                              } else {
+                                // Sæt fornuftige standardværdier for tid
+                                form.setValue("start_time", "09:00");
+                                form.setValue("end_time", "10:00");
+                              }
+                            }}
+                            className={cn(
+                              "data-[state=checked]:bg-[#0A84FF] data-[state=checked]:border-[#0A84FF] h-6 w-11",
+                              field.value ? "shadow-inner shadow-[#0A84FF]" : ""
+                            )}
                           />
                         </FormControl>
                       </FormItem>
@@ -531,7 +583,12 @@ export function MobileEventDialog({
                   {/* STARTER sektion */}
                   <div>
                     <span className="text-[#8E8E93] text-[15px] uppercase font-medium mb-2.5 block">
-                      STARTER
+                      STARTER{" "}
+                      {form.watch("is_all_day") && (
+                        <span className="text-[13px] opacity-70">
+                          (hele dagen)
+                        </span>
+                      )}
                     </span>
 
                     <div className="flex space-x-3">
@@ -663,36 +720,47 @@ export function MobileEventDialog({
                         />
                       </div>
 
-                      {!form.watch("is_all_day") && (
-                        <div className="w-40">
-                          <FormField
-                            control={form.control}
-                            name="start_time"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormControl>
-                                  <div className="flex items-center justify-center bg-[#2c2c2e] rounded-xl px-3 h-14">
-                                    <Clock className="w-5 h-5 text-white opacity-60 mr-2" />
-                                    <Input
-                                      type="time"
-                                      className="bg-transparent border-none text-white text-[19px] p-0 focus-visible:ring-0 w-auto font-medium"
-                                      value={field.value || ""}
-                                      onChange={field.onChange}
-                                    />
-                                  </div>
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      )}
+                      <div
+                        className={cn(
+                          "w-40 transition-opacity duration-300",
+                          form.watch("is_all_day")
+                            ? "opacity-50 pointer-events-none"
+                            : "opacity-100"
+                        )}
+                      >
+                        <FormField
+                          control={form.control}
+                          name="start_time"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <div className="flex items-center justify-center bg-[#2c2c2e] rounded-xl px-3 h-14">
+                                  <Clock className="w-5 h-5 text-white opacity-60 mr-2" />
+                                  <Input
+                                    type="time"
+                                    className="bg-transparent border-none text-white text-[19px] p-0 focus-visible:ring-0 w-auto font-medium"
+                                    value={field.value || ""}
+                                    onChange={field.onChange}
+                                    disabled={form.watch("is_all_day")}
+                                  />
+                                </div>
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
                   </div>
 
                   {/* SLUTTER sektion */}
                   <div>
                     <span className="text-[#8E8E93] text-[15px] uppercase font-medium mb-2.5 block">
-                      SLUTTER
+                      SLUTTER{" "}
+                      {form.watch("is_all_day") && (
+                        <span className="text-[13px] opacity-70">
+                          (hele dagen)
+                        </span>
+                      )}
                     </span>
 
                     <div className="flex space-x-3">
@@ -832,29 +900,35 @@ export function MobileEventDialog({
                         />
                       </div>
 
-                      {!form.watch("is_all_day") && (
-                        <div className="w-40">
-                          <FormField
-                            control={form.control}
-                            name="end_time"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormControl>
-                                  <div className="flex items-center justify-center bg-[#2c2c2e] rounded-xl px-3 h-14">
-                                    <Clock className="w-5 h-5 text-white opacity-60 mr-2" />
-                                    <Input
-                                      type="time"
-                                      className="bg-transparent border-none text-white text-[19px] p-0 focus-visible:ring-0 w-auto font-medium"
-                                      value={field.value || ""}
-                                      onChange={field.onChange}
-                                    />
-                                  </div>
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      )}
+                      <div
+                        className={cn(
+                          "w-40 transition-opacity duration-300",
+                          form.watch("is_all_day")
+                            ? "opacity-50 pointer-events-none"
+                            : "opacity-100"
+                        )}
+                      >
+                        <FormField
+                          control={form.control}
+                          name="end_time"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <div className="flex items-center justify-center bg-[#2c2c2e] rounded-xl px-3 h-14">
+                                  <Clock className="w-5 h-5 text-white opacity-60 mr-2" />
+                                  <Input
+                                    type="time"
+                                    className="bg-transparent border-none text-white text-[19px] p-0 focus-visible:ring-0 w-auto font-medium"
+                                    value={field.value || ""}
+                                    onChange={field.onChange}
+                                    disabled={form.watch("is_all_day")}
+                                  />
+                                </div>
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

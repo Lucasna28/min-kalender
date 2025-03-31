@@ -88,8 +88,6 @@ export function CreateEventDialog({
   createEvent,
   eventToEdit,
 }: CreateEventDialogProps) {
-  console.log("CreateEventDialog render:", { isOpen, eventToEdit });
-
   const { supabase } = useSupabase();
   const [isLoading, setIsLoading] = useState(false);
   const [calendars, setCalendars] = useState<Calendar[]>([]);

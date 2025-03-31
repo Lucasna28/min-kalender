@@ -205,14 +205,12 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
     const isRefreshing = usePullToRefresh(handleRefresh);
 
     const handleDeleteEvent = async (eventId: string) => {
-      console.log("CalendarView handleDeleteEvent starter", { eventId });
       try {
         const {
           data: { session: currentSession },
         } = await supabase.auth.getSession();
 
         if (!currentSession?.user) {
-          console.log("Ingen bruger fundet i session");
           toast.error("Du skal være logget ind for at slette begivenheder");
           return;
         }
@@ -230,8 +228,6 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
           return;
         }
 
-        console.log("Fundet event:", event);
-
         // Forsøg at slette eventet
         const { error: deleteError } = await supabase
           .from("events")
@@ -245,7 +241,6 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
         }
 
         // Hvis vi når hertil er eventet blevet slettet
-        console.log("Event slettet fra databasen");
         await refetch();
         setSelectedEvent(null);
         toast.success("Begivenheden er blevet slettet");
@@ -265,10 +260,10 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
       view === "day"
         ? DayView
         : view === "week"
-        ? WeekView
-        : view === "month"
-        ? MonthView
-        : YearView;
+          ? WeekView
+          : view === "month"
+            ? MonthView
+            : YearView;
 
     return (
       <div ref={ref} className="flex flex-col h-full sm:text-sm w-full">
@@ -378,7 +373,6 @@ const CalendarView = forwardRef<HTMLDivElement, CalendarViewProps>(
           }}
           onDelete={handleDeleteEvent}
           onEdit={(event) => {
-            console.log("Starter redigering af event:", event);
             setEventToEdit(event);
             setSelectedEventDate(event.start_date);
             setIsCreateEventOpen(true);
