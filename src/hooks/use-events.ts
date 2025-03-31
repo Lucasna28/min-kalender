@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useSupabase } from "@/components/providers/supabase-provider";
+import { RealtimeChannel } from "@supabase/supabase-js";
 
 export interface CalendarEvent {
   id: string;
@@ -35,6 +36,9 @@ interface CreateEventInput {
   calendar_id: string;
   category?: EventCategory;
   color?: string;
+  repeat?: string | null; // "weekly", "monthly", "yearly" eller null
+  repeat_count?: number; // Hvor mange gentagelser der skal oprettes
+  id?: string; // For redigering
 }
 
 type EventCategory =
@@ -80,11 +84,15 @@ export function useEvents(visibleCalendarIds: string[]) {
           end_date: new Date(event.end_date),
         }));
         setEvents(formattedEvents);
+        // Opdater det globale events state direkte
+        return formattedEvents;
       } else {
         setEvents([]);
+        return [];
       }
     } catch (error) {
       console.error("Uventet fejl ved hentning af events:", error);
+      return [];
     } finally {
       setIsLoading(false);
     }
@@ -200,20 +208,132 @@ export function useEvents(visibleCalendarIds: string[]) {
       // Debug logging
       console.log("Formateret event data:", formattedEvent);
 
-      // Opret event
-      const { data: newEvent, error } = await supabase
-        .from("events")
-        .insert([formattedEvent])
-        .select()
-        .single();
+      // Hvis der er en repeat-værdi (og den ikke er "null"), lav flere events
+      if (eventData.repeat && eventData.repeat !== "null" && !eventData.id) {
+        // Opret det første event
+        const { data: firstEvent, error } = await supabase
+          .from("events")
+          .insert([formattedEvent])
+          .select()
+          .single();
 
-      if (error) {
-        console.error("Database fejl:", error);
-        throw new Error(error.message);
+        if (error) {
+          console.error("Database fejl:", error);
+          throw new Error(error.message);
+        }
+
+        // Opret gentagelser (max 10 gentagelser)
+        const repeatCount = eventData.repeat_count || 10;
+        const eventsToCreate = [];
+        const startDate = new Date(eventData.start_date);
+        const endDate = new Date(eventData.end_date);
+        const durationMs = endDate.getTime() - startDate.getTime();
+
+        for (let i = 1; i <= repeatCount; i++) {
+          let newStartDate = new Date(startDate);
+          let newEndDate = new Date(endDate);
+
+          // Beregn nye datoer baseret på gentagelsesmønsteret
+          switch (eventData.repeat) {
+            case "weekly":
+              // Tilføj 7 dage
+              newStartDate.setDate(startDate.getDate() + (7 * i));
+              newEndDate = new Date(newStartDate.getTime() + durationMs);
+              break;
+
+            case "monthly":
+              // Tilføj en måned, håndter specielle tilfælde for 31, 30, 29
+              newStartDate.setMonth(startDate.getMonth() + i);
+
+              // Håndter måneder med færre dage
+              const originalDay = startDate.getDate();
+              const lastDayOfNewMonth = new Date(
+                newStartDate.getFullYear(),
+                newStartDate.getMonth() + 1,
+                0,
+              ).getDate();
+
+              if (originalDay > lastDayOfNewMonth) {
+                newStartDate.setDate(lastDayOfNewMonth);
+              }
+
+              newEndDate = new Date(newStartDate.getTime() + durationMs);
+              break;
+
+            case "yearly":
+              // Tilføj et år
+              newStartDate.setFullYear(startDate.getFullYear() + i);
+
+              // Håndter skudår
+              if (startDate.getMonth() === 1 && startDate.getDate() === 29) {
+                const isLeapYear =
+                  new Date(newStartDate.getFullYear(), 1, 29).getDate() === 29;
+                if (!isLeapYear) {
+                  newStartDate.setDate(28);
+                }
+              }
+
+              newEndDate = new Date(newStartDate.getTime() + durationMs);
+              break;
+          }
+
+          // Formatér event data for den nye gentagelse
+          const repeatEvent = {
+            ...formattedEvent,
+            start_date: newStartDate.toISOString(),
+            end_date: newEndDate.toISOString(),
+            parent_event_id: firstEvent.id,
+          };
+
+          delete repeatEvent.id; // Fjern eventuel id, da vi laver nye events
+          eventsToCreate.push(repeatEvent);
+        }
+
+        // Bulk indsæt alle gentagelser
+        if (eventsToCreate.length > 0) {
+          const { error: bulkError } = await supabase
+            .from("events")
+            .insert(eventsToCreate);
+
+          if (bulkError) {
+            console.error("Fejl ved oprettelse af gentagelser:", bulkError);
+          }
+        }
+
+        await fetchEvents();
+        return firstEvent;
+      } else if (eventData.id) {
+        // Håndter opdatering af eksisterende event
+        const { data: updatedEvent, error } = await supabase
+          .from("events")
+          .update(formattedEvent)
+          .eq("id", eventData.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Database fejl ved opdatering:", error);
+          throw new Error(error.message);
+        }
+
+        await fetchEvents();
+        return updatedEvent;
+      } else {
+        // Opret et enkelt event uden gentagelser
+        const { data: newEvent, error } = await supabase
+          .from("events")
+          .insert([formattedEvent])
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Database fejl:", error);
+          throw new Error(error.message);
+        }
+
+        await fetchEvents();
+        return newEvent;
       }
-
-      await fetchEvents();
-      return newEvent;
     } catch (error) {
       console.error("Fejl ved oprettelse af event:", error);
       throw error;
@@ -250,7 +370,7 @@ export function useEvents(visibleCalendarIds: string[]) {
       const tzOffset = startDate.getTimezoneOffset() * 60000; // Offset i millisekunder
 
       // Tilføj tidspunkt til datoerne hvis det ikke er en heldagsbegivenhed
-      if (!eventData.is_all_day) {
+      if (!eventData.is_all_day && eventData.start_time && eventData.end_time) {
         const [startHours, startMinutes] = eventData.start_time.split(":");
         const [endHours, endMinutes] = eventData.end_time.split(":");
 
@@ -268,6 +388,7 @@ export function useEvents(visibleCalendarIds: string[]) {
 
       // Sæt standardværdier for alle påkrævede felter
       return {
+        ...eventData.id ? { id: eventData.id } : {},
         title: eventData.title.trim(),
         description: eventData.description?.trim() || null,
         start_date: startUTC,
@@ -283,10 +404,7 @@ export function useEvents(visibleCalendarIds: string[]) {
         calendar_id: eventData.calendar_id,
         category: eventData.category || "arbejde",
         color: eventData.color || "#4285F4",
-        repeat_days: eventData.repeat_days || [],
         repeat: eventData.repeat || null,
-        repeat_until: eventData.repeat_until || null,
-        parent_event_id: eventData.parent_event_id || null,
       };
     } catch (error) {
       console.error("Fejl ved formatering af event data:", error);
