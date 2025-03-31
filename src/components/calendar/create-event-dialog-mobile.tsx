@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import { CategorySelect } from "./event-form/category-select";
 import { cn } from "@/lib/utils";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 
 interface MobileEventDialogProps {
@@ -74,6 +74,9 @@ export function MobileEventDialog({
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isRepeatOpen, setIsRepeatOpen] = useState(false);
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const [scrollHeight, setScrollHeight] = useState(0);
+  const [clientHeight, setClientHeight] = useState(0);
 
   // Tjek om formularen er gyldig baseret på om titlen er udfyldt
   const formTitle = form.watch("title");
@@ -92,6 +95,45 @@ export function MobileEventDialog({
   const calendarPopoverRef = useRef<HTMLButtonElement>(null);
   const categoryPopoverRef = useRef<HTMLButtonElement>(null);
   const repeatPopoverRef = useRef<HTMLButtonElement>(null);
+  // Ref til scrollable content div
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Beregn om vi kan scrolle op eller ned
+  const canScrollUp = scrollPosition > 10;
+  const canScrollDown = scrollPosition + clientHeight < scrollHeight - 10;
+
+  // Scroll funktioner til at scrolle op eller ned ved klik på indikatorer
+  const handleScrollUp = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ top: -200, behavior: "smooth" });
+    }
+  };
+
+  const handleScrollDown = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ top: 200, behavior: "smooth" });
+    }
+  };
+
+  // Håndter scroll events for at opdatere scroll-position og dimensioner
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } =
+        scrollContainerRef.current;
+      setScrollPosition(scrollTop);
+      setScrollHeight(scrollHeight);
+      setClientHeight(clientHeight);
+    }
+  };
+
+  // Initialiser scroll info ved første render
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      const { scrollHeight, clientHeight } = scrollContainerRef.current;
+      setScrollHeight(scrollHeight);
+      setClientHeight(clientHeight);
+    }
+  }, []);
 
   // Funktion til at få kategorifarven baseret på kategori-id
   const getCategoryColor = (categoryId: string) => {
@@ -196,8 +238,14 @@ export function MobileEventDialog({
       <DialogTitle className="sr-only">
         {eventToEdit ? "Rediger begivenhed" : "Opret ny begivenhed"}
       </DialogTitle>
+
+      {/* iOS-style swipe indicator at the top */}
+      <div className="w-full flex justify-center pt-2 pb-1">
+        <div className="w-12 h-1 bg-white/20 rounded-full"></div>
+      </div>
+
       {/* Header - forbedret med mere iOS-lignende stil */}
-      <div className="px-6 py-5 border-b border-[#2c2c2e] flex items-center justify-center sticky top-0 z-30 bg-[#1c1c1e] backdrop-blur-lg bg-opacity-95">
+      <div className="px-6 py-4 border-b border-[#2c2c2e] flex items-center justify-center sticky top-0 z-30 bg-[#1c1c1e] backdrop-blur-lg bg-opacity-95">
         <h2 className="text-[17px] font-semibold text-white">
           {eventToEdit ? "Rediger begivenhed" : "Ny begivenhed"}
         </h2>
@@ -220,7 +268,25 @@ export function MobileEventDialog({
             }
           }}
         >
-          <div className="overflow-y-auto max-h-[calc(85vh-160px)] bg-[#121212] text-white">
+          <div
+            className="overflow-y-auto max-h-[calc(85vh-160px)] bg-[#121212] text-white relative"
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+          >
+            {/* Top scroll indikator - vises kun når scrollet ned */}
+            {canScrollUp && (
+              <div
+                className="sticky top-0 left-0 right-0 z-10"
+                onClick={handleScrollUp}
+              >
+                <div className="h-8 bg-gradient-to-b from-[#121212] to-transparent opacity-90 cursor-pointer">
+                  <div className="absolute top-1 left-1/2 transform -translate-x-1/2 w-8 h-8 flex items-center justify-center">
+                    <div className="w-[40px] h-[5px] rounded-full bg-white/40 animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Titel input - tilføjet tilbage med forbedret styling */}
             <div className="bg-[#1c1c1e] border-b border-[#2c2c2e]">
               <div className="px-6 pt-6 pb-5">
@@ -237,6 +303,8 @@ export function MobileEventDialog({
                           placeholder="Begivenhedens titel..."
                           className="bg-[#2c2c2e] border-none text-white text-[17px] p-3 h-14 focus-visible:ring-1 focus-visible:ring-[#0A84FF] placeholder:text-[#8E8E93] font-normal rounded-xl px-4 w-full transition-all"
                           {...field}
+                          autoComplete="off"
+                          autoCapitalize="on"
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 text-[12px] mt-1.5" />
@@ -262,6 +330,7 @@ export function MobileEventDialog({
                           placeholder="Tilføj detaljer om begivenheden..."
                           className="bg-[#2c2c2e] border-none text-[17px] p-3 min-h-[100px] h-auto focus-visible:ring-1 focus-visible:ring-[#0A84FF] placeholder:text-[#8E8E93] resize-none font-normal rounded-xl px-4 w-full transition-all"
                           {...field}
+                          autoComplete="off"
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 text-[12px] mt-1.5" />
@@ -294,16 +363,7 @@ export function MobileEventDialog({
                             <SelectTrigger className="bg-[#2c2c2e] border-none text-[#0A84FF] h-12 min-w-[160px] max-w-[180px] rounded-xl focus:ring-1 focus:ring-[#0A84FF] font-normal shadow-sm touch-manipulation transition-all hover:bg-[#3a3a3c]">
                               <SelectValue>
                                 <div className="flex items-center max-w-full overflow-hidden">
-                                  <div
-                                    className="w-6 h-6 rounded-full mr-2 flex-shrink-0"
-                                    style={{
-                                      backgroundColor:
-                                        calendars.find(
-                                          (cal) => cal.id === field.value
-                                        )?.color || "#0A84FF",
-                                    }}
-                                  ></div>
-                                  <span className="truncate max-w-[100px] text-ellipsis overflow-hidden whitespace-nowrap">
+                                  <span className="truncate max-w-[160px] text-ellipsis overflow-hidden whitespace-nowrap">
                                     {getCalendarName(field.value)}
                                   </span>
                                 </div>
@@ -927,10 +987,24 @@ export function MobileEventDialog({
                 />
               </div>
             </div>
+
+            {/* Bottom scroll indikator - vises kun når man kan scrolle ned */}
+            {canScrollDown && (
+              <div
+                className="sticky bottom-0 left-0 right-0"
+                onClick={handleScrollDown}
+              >
+                <div className="h-8 bg-gradient-to-t from-[#121212] to-transparent opacity-90 cursor-pointer">
+                  <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-8 flex items-center justify-center">
+                    <div className="w-[40px] h-[5px] rounded-full bg-white/40 animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Bottom buttons with improved padding */}
-          <div className="px-6 py-3 flex items-center justify-between bg-[#1c1c1e] mt-auto sticky bottom-0 border-t border-[#2c2c2e] z-10">
+          <div className="px-6 py-4 flex items-center justify-between bg-[#1c1c1e] mt-auto sticky bottom-0 border-t border-[#2c2c2e] shadow-md z-10">
             <Button
               type="button"
               variant="secondary"
