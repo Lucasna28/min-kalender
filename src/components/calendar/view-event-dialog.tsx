@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { CalendarEvent } from "@/hooks/use-events";
+import { CalendarEvent, EventInvitation } from "@/hooks/use-events";
 import { useToast } from "@/components/ui/use-toast";
 import { useSupabase } from "@/components/providers/supabase-provider";
 
@@ -82,7 +82,8 @@ export function ViewEventDialog({
 }: ViewEventDialogProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
-  const { supabase, session } = useSupabase();
+  const { supabase } = useSupabase();
+  const [creatorName, setCreatorName] = useState<string | null>(null);
 
   useEffect(() => {
     // Tjek session når komponenten monteres
@@ -99,6 +100,51 @@ export function ViewEventDialog({
 
     checkSession();
   }, [supabase]);
+
+  useEffect(() => {
+    // Hent brugerinformation for creator, hvis event findes og ikke er systemgenereret
+    const fetchCreatorInfo = async () => {
+      if (
+        !event ||
+        event.calendar_id === "danish-holidays" ||
+        event.user_id === "system"
+      ) {
+        return;
+      }
+
+      // Først tjek om creator_name allerede findes i event objektet
+      if (event.creator_name) {
+        setCreatorName(event.creator_name);
+        return;
+      }
+
+      try {
+        // Hent brugerens profildata fra profiles tabellen
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("id", event.user_id)
+          .single();
+
+        if (error) {
+          console.error("Fejl ved hentning af brugerinfo:", error);
+          setCreatorName(event.creator_email || "Ukendt bruger");
+          return;
+        }
+
+        if (data && data.display_name) {
+          setCreatorName(data.display_name);
+        } else {
+          setCreatorName(event.creator_email || "Ukendt bruger");
+        }
+      } catch (error) {
+        console.error("Fejl ved hentning af brugerinfo:", error);
+        setCreatorName(event.creator_email || "Ukendt bruger");
+      }
+    };
+
+    fetchCreatorInfo();
+  }, [event, supabase]);
 
   if (!event) return null;
 
@@ -400,10 +446,8 @@ export function ViewEventDialog({
                         {event.calendar_id === "danish-holidays"
                           ? "Vorherre selv 😇"
                           : event.user_id === "system"
-                          ? "Systemets Ånd 🤖"
-                          : event.creator_name ||
-                            event.creator_email ||
-                            "Ukendt bruger"}
+                            ? "Systemets Ånd 🤖"
+                            : creatorName || "Ukendt bruger"}
                       </p>
                     </div>
                   </div>
@@ -428,37 +472,39 @@ export function ViewEventDialog({
                           </span>
                         </div>
                         <div className="space-y-2.5 mt-2.5">
-                          {event.invitations.map((invite, index) => (
-                            <motion.div
-                              key={`${invite.email}-${index}`}
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: 0.4 + index * 0.1 }}
-                              className="flex items-center gap-2 group/invite"
-                            >
-                              <div
-                                className={cn(
-                                  "w-2 h-2 rounded-full transition-transform duration-300 group-hover/invite:scale-125",
-                                  statusColors[
-                                    invite.status as keyof typeof statusColors
-                                  ],
-                                  "animate-pulse"
-                                )}
-                              />
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium truncate">
-                                  {invite.name || invite.email}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {
-                                    statusMessages[
-                                      invite.status as keyof typeof statusMessages
-                                    ]
-                                  }
-                                </p>
-                              </div>
-                            </motion.div>
-                          ))}
+                          {event.invitations.map(
+                            (invite: EventInvitation, index: number) => (
+                              <motion.div
+                                key={`${invite.email}-${index}`}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.4 + index * 0.1 }}
+                                className="flex items-center gap-2 group/invite"
+                              >
+                                <div
+                                  className={cn(
+                                    "w-2 h-2 rounded-full transition-transform duration-300 group-hover/invite:scale-125",
+                                    statusColors[
+                                      invite.status as keyof typeof statusColors
+                                    ],
+                                    "animate-pulse"
+                                  )}
+                                />
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium truncate">
+                                    {invite.name || invite.email}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {
+                                      statusMessages[
+                                        invite.status as keyof typeof statusMessages
+                                      ]
+                                    }
+                                  </p>
+                                </div>
+                              </motion.div>
+                            )
+                          )}
                         </div>
                       </div>
                     </div>

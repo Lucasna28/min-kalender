@@ -22,6 +22,16 @@ export interface CalendarEvent {
   created_at?: Date;
   creator_name?: string;
   creator_email?: string;
+  invitations?: EventInvitation[];
+}
+
+export interface EventInvitation {
+  id?: string;
+  email: string;
+  name?: string;
+  status: "accepted" | "declined" | "pending";
+  event_id?: string;
+  user_id?: string;
 }
 
 interface CreateEventInput {
@@ -116,7 +126,45 @@ export function useEvents(visibleCalendarIds: string[]) {
             table: "events",
           }, (payload) => {
             console.log("Realtime update:", payload);
-            fetchEvents(); // Brug fetchEvents i stedet for refetch
+
+            // Optimeret håndtering baseret på event-type
+            if (payload.eventType === "INSERT" && payload.new) {
+              // Tjek om inserted event tilhører en synlig kalender
+              if (visibleCalendarIds.includes(payload.new.calendar_id)) {
+                // Tilføj direkte til state
+                const newEvent = {
+                  ...(payload.new as CalendarEvent),
+                  start_date: new Date(payload.new.start_date),
+                  end_date: new Date(payload.new.end_date),
+                } as CalendarEvent;
+                setEvents((prevEvents) => [...prevEvents, newEvent]);
+              }
+            } else if (payload.eventType === "UPDATE" && payload.new) {
+              // Opdater eksisterende event i state
+              if (visibleCalendarIds.includes(payload.new.calendar_id)) {
+                setEvents((prevEvents) =>
+                  prevEvents.map((event) =>
+                    event.id === payload.new.id
+                      ? {
+                        ...(payload.new as CalendarEvent),
+                        start_date: new Date(payload.new.start_date),
+                        end_date: new Date(payload.new.end_date),
+                      } as CalendarEvent
+                      : event
+                  )
+                );
+              }
+            } else if (payload.eventType === "DELETE" && payload.old) {
+              // Fjern event fra state
+              setEvents((prevEvents) =>
+                prevEvents.filter((event) =>
+                  event.id !== (payload.old as CalendarEvent).id
+                )
+              );
+            } else {
+              // Fallback: Hvis payloaden ikke matcher forventede mønstre
+              fetchEvents();
+            }
           })
           .subscribe((status) => {
             if (status === "SUBSCRIBED") {
@@ -135,7 +183,7 @@ export function useEvents(visibleCalendarIds: string[]) {
         channel.unsubscribe();
       }
     };
-  }, [supabase, fetchEvents]); // Brug fetchEvents i dependency array
+  }, [supabase, fetchEvents]); // Fjern visibleCalendarIds fra dependency array
 
   // Initial fetch
   useEffect(() => {
